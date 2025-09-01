@@ -6,6 +6,7 @@ interface MobileIconProps {
     size?: number; // Width & height in px
     title?: string; // Accessible title
     strokeWidth?: number; // Optional stroke width
+    className?: string; // Optional additional CSS classes
 }
 
 const MobileIcon: React.FC<MobileIconProps> = ({ color = 'currentColor', size = 18, title = 'Mobile Phone Icon', strokeWidth = 0.1 }) => {

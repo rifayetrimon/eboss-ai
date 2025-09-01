@@ -1,6 +1,6 @@
 'use client';
 
-import { Home, Search, FileText, History, Bot, Sparkles, Menu } from 'lucide-react';
+import { Home, Search, FileText, History, Bot, Sparkles } from 'lucide-react';
 import IconAdd from '../icon/ai/icon-add';
 import IconSettings from '../icon/ai/icon-settings';
 import { useState } from 'react';
@@ -11,6 +11,7 @@ import IconSidebar from '../icon/ai/icon-sidebar';
 export default function Sidebar() {
     const [activeItem, setActiveItem] = useState('home');
     const [isCollapsed, setIsCollapsed] = useState(false);
+    const [hoverApp, setHoverApp] = useState(false);
     const { data } = useProfile();
 
     const navigationItems = [
@@ -25,20 +26,36 @@ export default function Sidebar() {
         <div className={`flex h-screen flex-col bg-sidebar border-r border-sidebar-border transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'}`}>
             {/* Header Section */}
             <div className="flex items-center gap-3 p-4 border-b border-sidebar-border">
-                <div className="flex items-center gap-3">
-                    <div className="relative flex items-center justify-center w-10 h-10 bg-sidebar-primary/10 rounded-lg">
-                        <Bot className="h-6 w-6 text-sidebar-primary" />
-                        <Sparkles className="absolute -top-1 -right-1 h-3 w-3 text-chart-1 animate-pulse" />
-                    </div>
-                    {!isCollapsed && (
-                        <div>
-                            <h2 className="font-semibold text-sidebar-foreground">Eboss AI</h2>
-                        </div>
+                <div
+                    className="relative flex items-center justify-center w-10 h-10 bg-sidebar-primary/10 rounded-lg cursor-pointer"
+                    onMouseEnter={() => setHoverApp(true)}
+                    onMouseLeave={() => setHoverApp(false)}
+                    onClick={() => setIsCollapsed(!isCollapsed)} // toggle sidebar
+                >
+                    {/* ✅ Change icon ONLY when collapsed */}
+                    {isCollapsed && hoverApp ? (
+                        <IconSidebar size={20} className="text-sidebar-primary" />
+                    ) : (
+                        <>
+                            <Bot className="h-6 w-6 text-sidebar-primary" />
+                            <Sparkles className="absolute -top-1 -right-1 h-3 w-3 text-chart-1 animate-pulse" />
+                        </>
                     )}
                 </div>
-                <button onClick={() => setIsCollapsed(!isCollapsed)} className="ml-auto p-1 rounded-md hover:bg-sidebar-accent transition-colors">
-                    <IconSidebar />
-                </button>
+
+                {/* Title (only when expanded) */}
+                {!isCollapsed && (
+                    <div>
+                        <h2 className="font-semibold text-sidebar-foreground">Eboss AI</h2>
+                    </div>
+                )}
+
+                {/* ✅ Show collapse button ONLY when sidebar is open */}
+                {!isCollapsed && (
+                    <button onClick={() => setIsCollapsed(true)} className="ml-auto p-1 rounded-md hover:bg-sidebar-accent transition-colors">
+                        <IconSidebar size={18} className="text-sidebar-foreground" />
+                    </button>
+                )}
             </div>
 
             {/* Navigation Section */}
