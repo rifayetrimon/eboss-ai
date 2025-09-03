@@ -13,7 +13,6 @@ import remarkGfm from 'remark-gfm';
 
 export default function Home() {
     const { data } = useProfile();
-    const suggestions = ["What's Eboss?", 'How do I sign up for Eboss?'];
     const [isHelpMenuOpen, setIsHelpMenuOpen] = useState(false);
     const [inputValue, setInputValue] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -115,42 +114,35 @@ export default function Home() {
                                     </h1>
                                 </motion.div>
 
-                                {/* Input box */}
-                                <motion.div
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ duration: 0.5, delay: 0.2 }}
-                                    className="border border-border rounded-lg p-2 shadow-sm relative"
-                                >
-                                    {/* 📎 Attachment Button */}
-                                    <button className="absolute bottom-2 left-2 flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
-                                        <div className="h-8 w-8 flex items-center justify-center rounded-full border border-muted-foreground">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                                            </svg>
-                                        </div>
-                                        <span className="hidden sm:inline text-xs">Add attachment</span>
+                                {/* Input box (rounded design like screenshot) */}
+                                <div className="relative flex items-center bg-white dark:bg-muted rounded-full shadow-md border border-gray-200 dark:border-border px-4 py-2">
+                                    {/* Plus Button */}
+                                    <button type="button" className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                        </svg>
                                     </button>
 
-                                    {/* 📝 Text Area */}
+                                    {/* Textarea */}
                                     <textarea
                                         ref={inputRef}
                                         value={inputValue}
                                         onChange={(e) => setInputValue(e.target.value)}
-                                        placeholder="Ask whatever you want..."
-                                        rows={2}
-                                        className="flex-1 w-full resize-none pl-12 pr-12 py-3 focus:outline-none bg-transparent"
+                                        placeholder="Ask anything"
+                                        rows={1}
+                                        className="flex-1 resize-none px-3 py-2 bg-transparent focus:outline-none text-sm"
                                         onKeyDown={handleKeyDown}
                                     />
 
-                                    {/* 📤 Send Button */}
-                                    <button
-                                        onClick={() => handleSendMessage()}
-                                        className="absolute bottom-2 right-2 p-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-                                    >
-                                        <FiSend size={18} />
+                                    {/* Mic Button */}
+                                    <button type="button" className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 1a3 3 0 00-3 3v7a3 3 0 006 0V4a3 3 0 00-3-3z" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 10v2a7 7 0 01-14 0v-2" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19v4m-4 0h8" />
+                                        </svg>
                                     </button>
-                                </motion.div>
+                                </div>
                             </div>
                         </div>
                     ) : (
@@ -226,7 +218,7 @@ export default function Home() {
                                 </div>
                             </div>
 
-                            {/* Bottom input field */}
+                            {/* Bottom input field (new design) */}
                             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="w-full max-w-3xl mx-auto">
                                 <form
                                     onSubmit={(e) => {
@@ -235,37 +227,34 @@ export default function Home() {
                                     }}
                                     className="relative w-full mb-4"
                                 >
-                                    <div className="border border-border rounded-lg p-2 shadow-sm relative">
-                                        {/* 📎 Attachment Button */}
-                                        <button type="button" className="absolute bottom-2 left-2 flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
-                                            <div className="h-8 w-8 flex items-center justify-center rounded-full border border-muted-foreground">
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                                                </svg>
-                                            </div>
-                                            <span className="hidden sm:inline text-xs">Add attachment</span>
+                                    <div className="relative flex items-center bg-white dark:bg-muted rounded-full shadow-md border border-gray-200 dark:border-border px-4 py-2">
+                                        {/* Plus Button */}
+                                        <button type="button" className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                            </svg>
                                         </button>
 
-                                        {/* 📝 Text Area */}
+                                        {/* Textarea */}
                                         <textarea
                                             ref={inputRef}
                                             value={inputValue}
                                             onChange={(e) => setInputValue(e.target.value)}
-                                            placeholder="Ask whatever you want..."
-                                            rows={2}
-                                            className="flex-1 w-full resize-none pl-12 pr-12 py-3 focus:outline-none bg-transparent"
+                                            placeholder="Ask anything"
+                                            rows={1}
+                                            className="flex-1 resize-none px-3 py-2 bg-transparent focus:outline-none text-sm"
                                             onKeyDown={handleKeyDown}
                                         />
 
-                                        {/* 📤 Send Button */}
-                                        <button type="submit" className="absolute bottom-2 right-2 p-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">
-                                            <FiSend size={18} />
+                                        {/* Send Button */}
+                                        <button type="submit" className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-white hover:bg-primary/90 transition">
+                                            <FiSend size={16} />
                                         </button>
                                     </div>
                                 </form>
 
                                 {/* Footer with help menu */}
-                                <div className="flex justify-between w-full text-sm text-muted-foreground">
+                                {/* <div className="flex justify-between w-full text-sm text-muted-foreground">
                                     <span>
                                         Powered by <b>awfatech</b> & <b>EBOSS</b>
                                     </span>
@@ -291,7 +280,7 @@ export default function Home() {
                                             </div>
                                         )}
                                     </div>
-                                </div>
+                                </div> */}
                             </motion.div>
                         </>
                     )}
