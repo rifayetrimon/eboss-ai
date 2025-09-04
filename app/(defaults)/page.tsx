@@ -5,11 +5,10 @@ import { useProfile } from '@/hook/user/useProfile';
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FiSend, FiCopy, FiThumbsUp, FiThumbsDown } from 'react-icons/fi';
-import { FaWhatsapp } from 'react-icons/fa';
-import { BiMessageDetail } from 'react-icons/bi';
 import { basePath } from '@/next.config';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import IconArrowUp from '@/components/icon/ai/icon-uparrow';
 
 export default function Home() {
     const { data } = useProfile();
@@ -103,48 +102,68 @@ export default function Home() {
                 {/* Main chat container */}
                 <main className="flex-1 flex flex-col p-6">
                     {!hasMessages ? (
-                        // Initial state (center h1 + input, aligned left together)
-                        <div className="flex-1 flex flex-col justify-center items-center">
-                            <div className="w-full max-w-3xl text-left">
-                                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="mb-8">
-                                    <h1 className="text-3xl sm:text-5xl font-semibold bg-gradient-to-r from-[#0046FF] to-[#FF3B3F] bg-clip-text text-transparent">
-                                        Hi there, {data?.personal?.full_name || 'Handsome'}
-                                        <br />
-                                        What would you like to know?
-                                    </h1>
-                                </motion.div>
-
-                                {/* Input box (rounded design like screenshot) */}
-                                <div className="relative flex items-center bg-white dark:bg-muted rounded-full shadow-md border border-gray-200 dark:border-border px-4 py-2">
-                                    {/* Plus Button */}
-                                    <button type="button" className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                                        </svg>
-                                    </button>
-
-                                    {/* Textarea */}
-                                    <textarea
-                                        ref={inputRef}
-                                        value={inputValue}
-                                        onChange={(e) => setInputValue(e.target.value)}
-                                        placeholder="Ask anything"
-                                        rows={1}
-                                        className="flex-1 resize-none px-3 py-2 bg-transparent focus:outline-none text-sm"
-                                        onKeyDown={handleKeyDown}
-                                    />
-
-                                    {/* Mic Button */}
-                                    <button type="button" className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 1a3 3 0 00-3 3v7a3 3 0 006 0V4a3 3 0 00-3-3z" />
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 10v2a7 7 0 01-14 0v-2" />
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19v4m-4 0h8" />
-                                        </svg>
-                                    </button>
+                        <>
+                            {/* Centered h1 */}
+                            <div className="flex-1 flex flex-col justify-center items-center">
+                                <div className="w-full max-w-3xl text-left">
+                                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="mb-8">
+                                        <h1 className="text-3xl sm:text-5xl font-semibold bg-gradient-to-r from-[#0046FF] to-[#FF3B3F] bg-clip-text text-transparent">
+                                            Hi {data?.personal?.full_name || 'Handsome'},
+                                            <br />
+                                            What would you like to know?
+                                        </h1>
+                                    </motion.div>
                                 </div>
                             </div>
-                        </div>
+
+                            {/* Input fixed to bottom */}
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.3 }}
+                                className="w-full max-w-3xl mx-auto sm:relative sm:mb-4 fixed left-0 bottom-0"
+                            >
+                                <form
+                                    onSubmit={(e) => {
+                                        e.preventDefault();
+                                        handleSendMessage();
+                                    }}
+                                    className="relative w-full"
+                                >
+                                    <div
+                                        className="
+                                        flex items-center bg-white dark:bg-muted
+                                        rounded-full shadow-md border border-gray-200 dark:border-border
+                                        px-4 py-2
+                                        w-full sm:w-auto
+                                    "
+                                    >
+                                        {/* Plus Button */}
+                                        <button type="button" className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                            </svg>
+                                        </button>
+
+                                        {/* Textarea */}
+                                        <textarea
+                                            ref={inputRef}
+                                            value={inputValue}
+                                            onChange={(e) => setInputValue(e.target.value)}
+                                            placeholder="Ask anything"
+                                            rows={1}
+                                            className="flex-1 resize-none px-3 py-2 bg-transparent focus:outline-none text-sm"
+                                            onKeyDown={handleKeyDown}
+                                        />
+
+                                        {/* Send Button */}
+                                        <button type="submit" className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-50 text-black transition">
+                                            <IconArrowUp />
+                                        </button>
+                                    </div>
+                                </form>
+                            </motion.div>
+                        </>
                     ) : (
                         // Chat state with messages
                         <>
@@ -218,16 +237,28 @@ export default function Home() {
                                 </div>
                             </div>
 
-                            {/* Bottom input field (new design) */}
-                            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="w-full max-w-3xl mx-auto">
+                            {/* Input box (rounded design like screenshot, fixed bottom on mobile) */}
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.3 }}
+                                className="w-full max-w-3xl mx-auto sm:relative sm:mb-4 fixed bottom-0 left-0"
+                            >
                                 <form
                                     onSubmit={(e) => {
                                         e.preventDefault();
                                         handleSendMessage();
                                     }}
-                                    className="relative w-full mb-4"
+                                    className="relative w-full"
                                 >
-                                    <div className="relative flex items-center bg-white dark:bg-muted rounded-full shadow-md border border-gray-200 dark:border-border px-4 py-2">
+                                    <div
+                                        className="
+                                            flex items-center bg-white dark:bg-muted
+                                            rounded-full shadow-md border border-gray-200 dark:border-border
+                                            px-4 py-2
+                                            w-full sm:w-auto
+                                        "
+                                    >
                                         {/* Plus Button */}
                                         <button type="button" className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition">
                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -247,40 +278,11 @@ export default function Home() {
                                         />
 
                                         {/* Send Button */}
-                                        <button type="submit" className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-white hover:bg-primary/90 transition">
-                                            <FiSend size={16} />
+                                        <button type="submit" className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-50 text-black transition">
+                                            <IconArrowUp />
                                         </button>
                                     </div>
                                 </form>
-
-                                {/* Footer with help menu */}
-                                {/* <div className="flex justify-between w-full text-sm text-muted-foreground">
-                                    <span>
-                                        Powered by <b>awfatech</b> & <b>EBOSS</b>
-                                    </span>
-                                    <div className="relative">
-                                        <button
-                                            onClick={toggleHelpMenu}
-                                            className="px-4 py-1 border border-border rounded-md bg-muted text-foreground transition-colors duration-200 hover:bg-muted/80"
-                                        >
-                                            Get help
-                                        </button>
-                                        {isHelpMenuOpen && (
-                                            <div className="absolute right-0 bottom-full mb-2 w-40 rounded-md shadow-lg bg-background ring-1 ring-border focus:outline-none z-50">
-                                                <div className="py-1" role="menu" aria-orientation="vertical">
-                                                    <a href="#" className="flex items-center px-4 py-2 text-sm text-foreground hover:bg-muted" role="menuitem">
-                                                        <BiMessageDetail className="h-4 w-4 mr-2" />
-                                                        Eboss Support
-                                                    </a>
-                                                    <a href="#" className="flex items-center px-4 py-2 text-sm text-foreground hover:bg-muted" role="menuitem">
-                                                        <FaWhatsapp className="h-4 w-4 mr-2 text-green-500" />
-                                                        Whatsapp
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div> */}
                             </motion.div>
                         </>
                     )}
