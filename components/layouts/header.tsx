@@ -2,6 +2,7 @@
 
 import React from 'react';
 import IconTempMessage from '../icon/ai/icon-temp-message';
+import Tippy from '@tippyjs/react';
 
 interface HeaderProps {
     isCollapsed: boolean;
@@ -19,9 +20,11 @@ export default function Header({ isCollapsed, onToggleChat }: HeaderProps) {
             <h1 className="text-xl font-semibold text-gray-800">EbossAI</h1>
 
             {/* Right: Temporary chat toggle */}
-            <button onClick={onToggleChat} className="p-2 rounded-md hover:bg-gray-100 transition-colors" aria-label="Turn off temporary chat">
-                <IconTempMessage className="h-5 w-5" />
-            </button>
+            <Tippy content="Turn on temporary chat" className="bg-gray-200 text-xs text-gray-600 rounded-md p-1" placement="bottom">
+                <button onClick={onToggleChat} className="p-2 rounded-md hover:bg-gray-100 transition-colors" aria-label="Turn off temporary chat">
+                    <IconTempMessage className="h-5 w-5" />
+                </button>
+            </Tippy>
         </header>
     );
 }
