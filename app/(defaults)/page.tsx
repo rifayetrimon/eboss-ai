@@ -13,7 +13,6 @@ import Header from '@/components/layouts/header';
 
 export default function Home() {
     const { data } = useProfile();
-    const [isHelpMenuOpen, setIsHelpMenuOpen] = useState(false);
     const [inputValue, setInputValue] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [conversation, setConversation] = useState<{ role: string; text: string }[]>([]);
@@ -24,8 +23,6 @@ export default function Home() {
 
     const inputRef = useRef<HTMLTextAreaElement | null>(null);
     const chatContainerRef = useRef<HTMLDivElement | null>(null);
-
-    const toggleHelpMenu = () => setIsHelpMenuOpen(!isHelpMenuOpen);
 
     const handleSendMessage = async (message?: string) => {
         const userMessage = message ?? inputValue.trim();
@@ -88,6 +85,49 @@ export default function Home() {
 
     const hasMessages = conversation.length > 0;
 
+    // Input component (reusable for desktop + mobile)
+    const InputBox = (
+        <form
+            onSubmit={(e) => {
+                e.preventDefault();
+                handleSendMessage();
+            }}
+            className="relative w-full"
+        >
+            <div
+                className="
+                    flex items-center bg-white dark:bg-muted
+                    rounded-full shadow-md border border-gray-200 dark:border-border
+                    px-4 py-2
+                    w-full
+                "
+            >
+                {/* Plus Button */}
+                <button type="button" className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                </button>
+
+                {/* Textarea */}
+                <textarea
+                    ref={inputRef}
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    placeholder="Ask anything"
+                    rows={1}
+                    className="flex-1 resize-none px-3 py-2 bg-transparent focus:outline-none text-sm"
+                    onKeyDown={handleKeyDown}
+                />
+
+                {/* Send Button */}
+                <button type="submit" className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-50 text-black transition">
+                    <IconArrowUp />
+                </button>
+            </div>
+        </form>
+    );
+
     return (
         <>
             {/* Gradient Defs */}
@@ -119,50 +159,8 @@ export default function Home() {
                                 </div>
                             </div>
 
-                            {/* Input: centered on desktop, fixed bottom on mobile */}
-                            <div className="w-full max-w-3xl mx-auto mt-auto sm:mt-8">
-                                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="w-full">
-                                    <form
-                                        onSubmit={(e) => {
-                                            e.preventDefault();
-                                            handleSendMessage();
-                                        }}
-                                        className="relative w-full"
-                                    >
-                                        <div
-                                            className="
-                                                flex items-center bg-white dark:bg-muted
-                                                rounded-full shadow-md border border-gray-200 dark:border-border
-                                                px-4 py-2
-                                                w-full
-                                            "
-                                        >
-                                            {/* Plus Button */}
-                                            <button type="button" className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition">
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                                                </svg>
-                                            </button>
-
-                                            {/* Textarea */}
-                                            <textarea
-                                                ref={inputRef}
-                                                value={inputValue}
-                                                onChange={(e) => setInputValue(e.target.value)}
-                                                placeholder="Ask anything"
-                                                rows={1}
-                                                className="flex-1 resize-none px-3 py-2 bg-transparent focus:outline-none text-sm"
-                                                onKeyDown={handleKeyDown}
-                                            />
-
-                                            {/* Send Button */}
-                                            <button type="submit" className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-50 text-black transition">
-                                                <IconArrowUp />
-                                            </button>
-                                        </div>
-                                    </form>
-                                </motion.div>
-                            </div>
+                            {/* Desktop Input */}
+                            <div className="hidden sm:block w-full max-w-3xl mx-auto mt-auto sm:mt-8">{InputBox}</div>
                         </>
                     ) : (
                         // Chat state with messages
@@ -237,50 +235,8 @@ export default function Home() {
                                 </div>
                             </div>
 
-                            {/* Input: fixed bottom on mobile, centered on web */}
-                            <div className="w-full max-w-3xl mx-auto mt-auto">
-                                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="w-full">
-                                    <form
-                                        onSubmit={(e) => {
-                                            e.preventDefault();
-                                            handleSendMessage();
-                                        }}
-                                        className="relative w-full"
-                                    >
-                                        <div
-                                            className="
-                                                flex items-center bg-white dark:bg-muted
-                                                rounded-full shadow-md border border-gray-200 dark:border-border
-                                                px-4 py-2
-                                                w-full
-                                            "
-                                        >
-                                            {/* Plus Button */}
-                                            <button type="button" className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition">
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                                                </svg>
-                                            </button>
-
-                                            {/* Textarea */}
-                                            <textarea
-                                                ref={inputRef}
-                                                value={inputValue}
-                                                onChange={(e) => setInputValue(e.target.value)}
-                                                placeholder="Ask anything"
-                                                rows={1}
-                                                className="flex-1 resize-none px-3 py-2 bg-transparent focus:outline-none text-sm"
-                                                onKeyDown={handleKeyDown}
-                                            />
-
-                                            {/* Send Button */}
-                                            <button type="submit" className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-50 text-black transition">
-                                                <IconArrowUp />
-                                            </button>
-                                        </div>
-                                    </form>
-                                </motion.div>
-                            </div>
+                            {/* Desktop Input */}
+                            <div className="hidden sm:block w-full max-w-3xl mx-auto mt-auto">{InputBox}</div>
                         </>
                     )}
                 </main>
@@ -288,47 +244,7 @@ export default function Home() {
 
             {/* Mobile input fixed at bottom */}
             <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t border-gray-200 dark:border-gray-800 sm:hidden">
-                <div className="w-full max-w-3xl mx-auto">
-                    <form
-                        onSubmit={(e) => {
-                            e.preventDefault();
-                            handleSendMessage();
-                        }}
-                        className="relative w-full"
-                    >
-                        <div
-                            className="
-                                flex items-center bg-white dark:bg-muted
-                                rounded-full shadow-md border border-gray-200 dark:border-border
-                                px-4 py-2
-                                w-full
-                            "
-                        >
-                            {/* Plus Button */}
-                            <button type="button" className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                                </svg>
-                            </button>
-
-                            {/* Textarea */}
-                            <textarea
-                                ref={inputRef}
-                                value={inputValue}
-                                onChange={(e) => setInputValue(e.target.value)}
-                                placeholder="Ask anything"
-                                rows={1}
-                                className="flex-1 resize-none px-3 py-2 bg-transparent focus:outline-none text-sm"
-                                onKeyDown={handleKeyDown}
-                            />
-
-                            {/* Send Button */}
-                            <button type="submit" className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-50 text-black transition">
-                                <IconArrowUp />
-                            </button>
-                        </div>
-                    </form>
-                </div>
+                <div className="w-full max-w-3xl mx-auto">{InputBox}</div>
             </div>
         </>
     );

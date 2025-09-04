@@ -16,11 +16,9 @@ interface SidebarProps {
 
 export default function Sidebar({ onCollapseChange }: SidebarProps) {
     const [activeItem, setActiveItem] = useState('home');
-    const [isCollapsed, setIsCollapsed] = useState(false);
+    const [isCollapsed, setIsCollapsed] = useState(false); // desktop only
     const [hoverApp, setHoverApp] = useState(false);
-    const [mobileOpen, setMobileOpen] = useState(false);
-    const [isTransitioning, setIsTransitioning] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
+    const [mobileOpen, setMobileOpen] = useState(false); // mobile only
     const { data } = useProfile();
     const sidebarRef = useRef<HTMLDivElement>(null);
 
@@ -31,20 +29,10 @@ export default function Sidebar({ onCollapseChange }: SidebarProps) {
         { id: 'history', icon: History, label: 'History', href: '/history' },
     ];
 
-    // Notify parent when collapsed changes
+    // Notify parent when collapsed changes (desktop only)
     useEffect(() => {
         if (onCollapseChange) onCollapseChange(isCollapsed);
     }, [isCollapsed, onCollapseChange]);
-
-    // Handle sidebar transitions
-    useEffect(() => {
-        if (mobileOpen) {
-            setIsTransitioning(true);
-        } else {
-            const timer = setTimeout(() => setIsTransitioning(false), 300);
-            return () => clearTimeout(timer);
-        }
-    }, [mobileOpen]);
 
     // Close sidebar when clicking outside on mobile
     useEffect(() => {
@@ -76,10 +64,11 @@ export default function Sidebar({ onCollapseChange }: SidebarProps) {
             {/* Sidebar */}
             <div
                 ref={sidebarRef}
-                className={`fixed md:relative top-0 left-0 h-screen flex flex-col bg-white md:bg-sidebar border-r border-sidebar-border transition-all duration-300 ease-out overflow-hidden z-50
-          ${isCollapsed ? 'w-16' : 'w-64'}
-          ${mobileOpen ? 'translate-x-0 shadow-xl' : '-translate-x-full md:translate-x-0'}
-          ${isTransitioning ? '' : 'md:!transition-all'}
+                className={`
+          fixed md:relative top-0 left-0 h-screen flex flex-col bg-white md:bg-sidebar border-r border-sidebar-border
+          transition-all duration-300 ease-out z-50 overflow-y-auto
+          ${mobileOpen ? 'translate-x-0 shadow-xl w-64' : '-translate-x-full md:translate-x-0'}
+          ${!mobileOpen ? (isCollapsed ? 'md:w-16' : 'md:w-64') : 'w-64'} 
         `}
                 style={{
                     transitionProperty: 'transform, width, box-shadow',
@@ -93,8 +82,6 @@ export default function Sidebar({ onCollapseChange }: SidebarProps) {
                         <input
                             type="text"
                             placeholder="search chat..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
                             className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-sidebar-primary/30 focus:border-sidebar-primary"
                         />
                     </div>
@@ -109,10 +96,7 @@ export default function Sidebar({ onCollapseChange }: SidebarProps) {
                         className="flex items-center justify-center w-10 h-10 bg-sidebar-primary/10 rounded-lg cursor-pointer transition-all duration-200 hover:bg-sidebar-primary/20"
                         onMouseEnter={() => setHoverApp(true)}
                         onMouseLeave={() => setHoverApp(false)}
-                        onClick={() => {
-                            setIsCollapsed(!isCollapsed);
-                            if (isCollapsed) setMobileOpen(false);
-                        }}
+                        onClick={() => setIsCollapsed(!isCollapsed)}
                     >
                         {isCollapsed && hoverApp ? (
                             <IconSidebar size={20} className="text-sidebar-primary transition-opacity duration-200" />
@@ -138,17 +122,17 @@ export default function Sidebar({ onCollapseChange }: SidebarProps) {
                                 className={`w-full flex items-center gap-3 h-10 px-3 rounded-md text-sidebar-foreground transition-all duration-200 
                   hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:translate-x-1
                   ${activeItem === item.id ? 'bg-sidebar-accent text-sidebar-accent-foreground' : ''}
-                  ${isCollapsed ? 'justify-center' : 'justify-start'}
+                  ${isCollapsed && !mobileOpen ? 'justify-center' : 'justify-start'}
                 `}
                                 onClick={() => {
                                     setActiveItem(item.id);
                                     setMobileOpen(false);
                                 }}
                                 style={{ transitionDelay: `${index * 30}ms` }}
-                                title={isCollapsed ? item.label : undefined}
+                                title={isCollapsed && !mobileOpen ? item.label : undefined}
                             >
                                 <Icon className="h-4 w-4 flex-shrink-0" />
-                                {!isCollapsed && <span className="whitespace-nowrap overflow-hidden text-ellipsis transition-opacity duration-200">{item.label}</span>}
+                                {(!isCollapsed || mobileOpen) && <span className="whitespace-nowrap overflow-hidden text-ellipsis transition-opacity duration-200">{item.label}</span>}
                             </button>
                         );
                     })}
@@ -162,16 +146,16 @@ export default function Sidebar({ onCollapseChange }: SidebarProps) {
                             className={`w-full flex items-center gap-3 h-10 px-3 rounded-md text-sidebar-foreground transition-all duration-200 
                 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:translate-x-1
                 ${activeItem === 'settings' ? 'bg-sidebar-accent text-sidebar-accent-foreground' : ''}
-                ${isCollapsed ? 'justify-center' : 'justify-start'}
+                ${isCollapsed && !mobileOpen ? 'justify-center' : 'justify-start'}
               `}
                             onClick={() => {
                                 setActiveItem('settings');
                                 setMobileOpen(false);
                             }}
-                            title={isCollapsed ? 'Settings' : undefined}
+                            title={isCollapsed && !mobileOpen ? 'Settings' : undefined}
                         >
                             <IconSettings className="h-4 w-4 flex-shrink-0" />
-                            {!isCollapsed && 'Settings'}
+                            {(!isCollapsed || mobileOpen) && 'Settings'}
                         </button>
 
                         {/* Profile */}
@@ -179,13 +163,13 @@ export default function Sidebar({ onCollapseChange }: SidebarProps) {
                             className={`w-full flex items-center gap-3 h-10 px-3 rounded-md text-sidebar-foreground transition-all duration-200 
                 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:translate-x-1
                 ${activeItem === 'profile' ? 'bg-sidebar-accent text-sidebar-accent-foreground' : ''}
-                ${isCollapsed ? 'justify-center' : 'justify-start'}
+                ${isCollapsed && !mobileOpen ? 'justify-center' : 'justify-start'}
               `}
                             onClick={() => {
                                 setActiveItem('profile');
                                 setMobileOpen(false);
                             }}
-                            title={isCollapsed ? 'Profile' : undefined}
+                            title={isCollapsed && !mobileOpen ? 'Profile' : undefined}
                         >
                             <Image
                                 src={data?.personal?.file_profile_url || '/assets/images/user-profile.jpeg'}
@@ -194,7 +178,7 @@ export default function Sidebar({ onCollapseChange }: SidebarProps) {
                                 height={32}
                                 className="h-8 w-8 rounded-full object-cover flex-shrink-0 transition-transform duration-200 hover:scale-105"
                             />
-                            {!isCollapsed && <span className="whitespace-nowrap overflow-hidden text-ellipsis">Profile</span>}
+                            {(!isCollapsed || mobileOpen) && <span className="whitespace-nowrap overflow-hidden text-ellipsis">Profile</span>}
                         </button>
                     </div>
                 </div>
