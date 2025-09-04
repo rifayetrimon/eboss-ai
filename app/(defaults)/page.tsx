@@ -4,11 +4,12 @@ import Sidebar from '@/components/layouts/sidebar';
 import { useProfile } from '@/hook/user/useProfile';
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FiSend, FiCopy, FiThumbsUp, FiThumbsDown } from 'react-icons/fi';
+import { FiCopy, FiThumbsUp, FiThumbsDown } from 'react-icons/fi';
 import { basePath } from '@/next.config';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import IconArrowUp from '@/components/icon/ai/icon-uparrow';
+import Header from '@/components/layouts/header';
 
 export default function Home() {
     const { data } = useProfile();
@@ -19,6 +20,7 @@ export default function Home() {
     const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
     const [likedIndex, setLikedIndex] = useState<number | null>(null);
     const [dislikedIndex, setDislikedIndex] = useState<number | null>(null);
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
     const inputRef = useRef<HTMLTextAreaElement | null>(null);
     const chatContainerRef = useRef<HTMLDivElement | null>(null);
@@ -97,10 +99,11 @@ export default function Home() {
             </svg>
 
             <div className="flex h-screen bg-background">
-                <Sidebar />
+                <Sidebar onCollapseChange={setIsSidebarCollapsed} />
+                <Header isCollapsed={isSidebarCollapsed} />
 
                 {/* Main chat container */}
-                <main className="flex-1 flex flex-col p-6">
+                <main className="flex-1 flex flex-col p-6 relative">
                     {!hasMessages ? (
                         <>
                             {/* Centered h1 */}
@@ -116,59 +119,56 @@ export default function Home() {
                                 </div>
                             </div>
 
-                            {/* Input fixed to bottom */}
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.3 }}
-                                className="w-full max-w-3xl mx-auto sm:relative sm:mb-4 fixed left-0 bottom-0"
-                            >
-                                <form
-                                    onSubmit={(e) => {
-                                        e.preventDefault();
-                                        handleSendMessage();
-                                    }}
-                                    className="relative w-full"
-                                >
-                                    <div
-                                        className="
-                                        flex items-center bg-white dark:bg-muted
-                                        rounded-full shadow-md border border-gray-200 dark:border-border
-                                        px-4 py-2
-                                        w-full sm:w-auto
-                                    "
+                            {/* Input: centered on desktop, fixed bottom on mobile */}
+                            <div className="w-full max-w-3xl mx-auto mt-auto sm:mt-8">
+                                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="w-full">
+                                    <form
+                                        onSubmit={(e) => {
+                                            e.preventDefault();
+                                            handleSendMessage();
+                                        }}
+                                        className="relative w-full"
                                     >
-                                        {/* Plus Button */}
-                                        <button type="button" className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                                            </svg>
-                                        </button>
+                                        <div
+                                            className="
+                                                flex items-center bg-white dark:bg-muted
+                                                rounded-full shadow-md border border-gray-200 dark:border-border
+                                                px-4 py-2
+                                                w-full
+                                            "
+                                        >
+                                            {/* Plus Button */}
+                                            <button type="button" className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                                </svg>
+                                            </button>
 
-                                        {/* Textarea */}
-                                        <textarea
-                                            ref={inputRef}
-                                            value={inputValue}
-                                            onChange={(e) => setInputValue(e.target.value)}
-                                            placeholder="Ask anything"
-                                            rows={1}
-                                            className="flex-1 resize-none px-3 py-2 bg-transparent focus:outline-none text-sm"
-                                            onKeyDown={handleKeyDown}
-                                        />
+                                            {/* Textarea */}
+                                            <textarea
+                                                ref={inputRef}
+                                                value={inputValue}
+                                                onChange={(e) => setInputValue(e.target.value)}
+                                                placeholder="Ask anything"
+                                                rows={1}
+                                                className="flex-1 resize-none px-3 py-2 bg-transparent focus:outline-none text-sm"
+                                                onKeyDown={handleKeyDown}
+                                            />
 
-                                        {/* Send Button */}
-                                        <button type="submit" className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-50 text-black transition">
-                                            <IconArrowUp />
-                                        </button>
-                                    </div>
-                                </form>
-                            </motion.div>
+                                            {/* Send Button */}
+                                            <button type="submit" className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-50 text-black transition">
+                                                <IconArrowUp />
+                                            </button>
+                                        </div>
+                                    </form>
+                                </motion.div>
+                            </div>
                         </>
                     ) : (
                         // Chat state with messages
                         <>
                             {/* Chat messages area */}
-                            <div ref={chatContainerRef} className="flex-1 w-full max-w-3xl mx-auto overflow-y-auto mb-6">
+                            <div ref={chatContainerRef} className="flex-1 w-full max-w-3xl mx-auto overflow-y-auto pb-20">
                                 <div className="space-y-6">
                                     {conversation.map((message, index) => (
                                         <motion.div key={index} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
@@ -237,56 +237,98 @@ export default function Home() {
                                 </div>
                             </div>
 
-                            {/* Input box (rounded design like screenshot, fixed bottom on mobile) */}
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.3 }}
-                                className="w-full max-w-3xl mx-auto sm:relative sm:mb-4 fixed bottom-0 left-0"
-                            >
-                                <form
-                                    onSubmit={(e) => {
-                                        e.preventDefault();
-                                        handleSendMessage();
-                                    }}
-                                    className="relative w-full"
-                                >
-                                    <div
-                                        className="
-                                            flex items-center bg-white dark:bg-muted
-                                            rounded-full shadow-md border border-gray-200 dark:border-border
-                                            px-4 py-2
-                                            w-full sm:w-auto
-                                        "
+                            {/* Input: fixed bottom on mobile, centered on web */}
+                            <div className="w-full max-w-3xl mx-auto mt-auto">
+                                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="w-full">
+                                    <form
+                                        onSubmit={(e) => {
+                                            e.preventDefault();
+                                            handleSendMessage();
+                                        }}
+                                        className="relative w-full"
                                     >
-                                        {/* Plus Button */}
-                                        <button type="button" className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                                            </svg>
-                                        </button>
+                                        <div
+                                            className="
+                                                flex items-center bg-white dark:bg-muted
+                                                rounded-full shadow-md border border-gray-200 dark:border-border
+                                                px-4 py-2
+                                                w-full
+                                            "
+                                        >
+                                            {/* Plus Button */}
+                                            <button type="button" className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                                </svg>
+                                            </button>
 
-                                        {/* Textarea */}
-                                        <textarea
-                                            ref={inputRef}
-                                            value={inputValue}
-                                            onChange={(e) => setInputValue(e.target.value)}
-                                            placeholder="Ask anything"
-                                            rows={1}
-                                            className="flex-1 resize-none px-3 py-2 bg-transparent focus:outline-none text-sm"
-                                            onKeyDown={handleKeyDown}
-                                        />
+                                            {/* Textarea */}
+                                            <textarea
+                                                ref={inputRef}
+                                                value={inputValue}
+                                                onChange={(e) => setInputValue(e.target.value)}
+                                                placeholder="Ask anything"
+                                                rows={1}
+                                                className="flex-1 resize-none px-3 py-2 bg-transparent focus:outline-none text-sm"
+                                                onKeyDown={handleKeyDown}
+                                            />
 
-                                        {/* Send Button */}
-                                        <button type="submit" className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-50 text-black transition">
-                                            <IconArrowUp />
-                                        </button>
-                                    </div>
-                                </form>
-                            </motion.div>
+                                            {/* Send Button */}
+                                            <button type="submit" className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-50 text-black transition">
+                                                <IconArrowUp />
+                                            </button>
+                                        </div>
+                                    </form>
+                                </motion.div>
+                            </div>
                         </>
                     )}
                 </main>
+            </div>
+
+            {/* Mobile input fixed at bottom */}
+            <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t border-gray-200 dark:border-gray-800 sm:hidden">
+                <div className="w-full max-w-3xl mx-auto">
+                    <form
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            handleSendMessage();
+                        }}
+                        className="relative w-full"
+                    >
+                        <div
+                            className="
+                                flex items-center bg-white dark:bg-muted
+                                rounded-full shadow-md border border-gray-200 dark:border-border
+                                px-4 py-2
+                                w-full
+                            "
+                        >
+                            {/* Plus Button */}
+                            <button type="button" className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                </svg>
+                            </button>
+
+                            {/* Textarea */}
+                            <textarea
+                                ref={inputRef}
+                                value={inputValue}
+                                onChange={(e) => setInputValue(e.target.value)}
+                                placeholder="Ask anything"
+                                rows={1}
+                                className="flex-1 resize-none px-3 py-2 bg-transparent focus:outline-none text-sm"
+                                onKeyDown={handleKeyDown}
+                            />
+
+                            {/* Send Button */}
+                            <button type="submit" className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-50 text-black transition">
+                                <IconArrowUp />
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </>
     );

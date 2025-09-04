@@ -1,6 +1,6 @@
 'use client';
 
-import { Home, Search, FileText, History, Bot, Sparkles, X } from 'lucide-react';
+import { Home, Search, FileText, History, X } from 'lucide-react';
 import IconAdd from '../icon/ai/icon-add';
 import IconSettings from '../icon/ai/icon-settings';
 import { useState, useEffect, useRef } from 'react';
@@ -8,8 +8,13 @@ import { useProfile } from '@/hook/user/useProfile';
 import Image from 'next/image';
 import IconSidebar from '../icon/ai/icon-sidebar';
 import TwoBarMenuIcon from '../icon/ai/icon-twobar';
+import IconAiLogo from '../icon/ai/icon-ai-logo';
 
-export default function Sidebar() {
+interface SidebarProps {
+    onCollapseChange?: (collapsed: boolean) => void;
+}
+
+export default function Sidebar({ onCollapseChange }: SidebarProps) {
     const [activeItem, setActiveItem] = useState('home');
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [hoverApp, setHoverApp] = useState(false);
@@ -25,6 +30,11 @@ export default function Sidebar() {
         { id: 'files', icon: FileText, label: 'Files', href: '/files' },
         { id: 'history', icon: History, label: 'History', href: '/history' },
     ];
+
+    // Notify parent when collapsed changes
+    useEffect(() => {
+        if (onCollapseChange) onCollapseChange(isCollapsed);
+    }, [isCollapsed, onCollapseChange]);
 
     // Handle sidebar transitions
     useEffect(() => {
@@ -50,7 +60,7 @@ export default function Sidebar() {
 
     return (
         <>
-            {/* Mobile Header Bar - Always visible */}
+            {/* Mobile Header Bar */}
             <div className="md:hidden fixed top-0 left-0 right-0 h-14 bg-white shadow-sm z-30 flex items-center px-4">
                 <button onClick={() => setMobileOpen(true)} className="flex items-center gap-2 p-2 rounded-md transition-all duration-300 hover:bg-gray-100" aria-label="Open menu">
                     <TwoBarMenuIcon className="h-5 w-5 text-gray-800" />
@@ -110,18 +120,9 @@ export default function Sidebar() {
                         {isCollapsed && hoverApp ? (
                             <IconSidebar size={20} className="text-sidebar-primary transition-opacity duration-200" />
                         ) : (
-                            <>
-                                <Bot className="h-6 w-6 text-sidebar-primary transition-transform duration-200" />
-                                <Sparkles className="absolute -top-1 -right-1 h-3 w-3 text-chart-1 animate-pulse" />
-                            </>
+                            <IconAiLogo className="h-6 w-6 text-sidebar-primary transition-transform duration-200" />
                         )}
                     </div>
-
-                    {!isCollapsed && (
-                        <div className="overflow-hidden transition-all duration-300">
-                            <h2 className="font-semibold text-sidebar-foreground whitespace-nowrap">Eboss AI</h2>
-                        </div>
-                    )}
 
                     {!isCollapsed && (
                         <button
