@@ -53,7 +53,6 @@ export default function Sidebar({ onCollapseChange }: SidebarProps) {
                 setMobileOpen(false);
             }
         };
-
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [mobileOpen]);
@@ -77,13 +76,11 @@ export default function Sidebar({ onCollapseChange }: SidebarProps) {
             {/* Sidebar */}
             <div
                 ref={sidebarRef}
-                className={`
-                    fixed md:relative top-0 left-0 h-screen flex flex-col bg-white md:bg-sidebar border-r border-sidebar-border
-                    transition-all duration-300 ease-out overflow-hidden z-50
-                    ${isCollapsed ? 'w-16' : 'w-64'}
-                    ${mobileOpen ? 'translate-x-0 shadow-xl' : '-translate-x-full md:translate-x-0'}
-                    ${isTransitioning ? '' : 'md:!transition-all'}
-                `}
+                className={`fixed md:relative top-0 left-0 h-screen flex flex-col bg-white md:bg-sidebar border-r border-sidebar-border transition-all duration-300 ease-out overflow-hidden z-50
+          ${isCollapsed ? 'w-16' : 'w-64'}
+          ${mobileOpen ? 'translate-x-0 shadow-xl' : '-translate-x-full md:translate-x-0'}
+          ${isTransitioning ? '' : 'md:!transition-all'}
+        `}
                 style={{
                     transitionProperty: 'transform, width, box-shadow',
                     transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
@@ -106,10 +103,10 @@ export default function Sidebar({ onCollapseChange }: SidebarProps) {
                     </button>
                 </div>
 
-                {/* Desktop Header */}
-                <div className="hidden md:flex items-center gap-3 p-4 border-b border-sidebar-border">
+                {/* Desktop Header (Logo + Collapse Button) */}
+                <div className="hidden md:flex items-center justify-between h-14 px-4">
                     <div
-                        className="relative flex items-center justify-center w-10 h-10 bg-sidebar-primary/10 rounded-lg cursor-pointer transition-all duration-200 hover:bg-sidebar-primary/20"
+                        className="flex items-center justify-center w-10 h-10 bg-sidebar-primary/10 rounded-lg cursor-pointer transition-all duration-200 hover:bg-sidebar-primary/20"
                         onMouseEnter={() => setHoverApp(true)}
                         onMouseLeave={() => setHoverApp(false)}
                         onClick={() => {
@@ -125,11 +122,7 @@ export default function Sidebar({ onCollapseChange }: SidebarProps) {
                     </div>
 
                     {!isCollapsed && (
-                        <button
-                            onClick={() => setIsCollapsed(true)}
-                            className="ml-auto p-1.5 rounded-md hover:bg-sidebar-accent transition-all duration-200 hover:scale-105"
-                            aria-label="Collapse sidebar"
-                        >
+                        <button onClick={() => setIsCollapsed(true)} className="p-1.5 rounded-md hover:bg-sidebar-accent transition-all duration-200 hover:scale-105" aria-label="Collapse sidebar">
                             <IconSidebar size={18} className="text-sidebar-foreground" />
                         </button>
                     )}
@@ -143,10 +136,10 @@ export default function Sidebar({ onCollapseChange }: SidebarProps) {
                             <button
                                 key={item.id}
                                 className={`w-full flex items-center gap-3 h-10 px-3 rounded-md text-sidebar-foreground transition-all duration-200 
-                                    hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:translate-x-1
-                                    ${activeItem === item.id ? 'bg-sidebar-accent text-sidebar-accent-foreground' : ''}
-                                    ${isCollapsed ? 'justify-center' : 'justify-start'}
-                                `}
+                  hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:translate-x-1
+                  ${activeItem === item.id ? 'bg-sidebar-accent text-sidebar-accent-foreground' : ''}
+                  ${isCollapsed ? 'justify-center' : 'justify-start'}
+                `}
                                 onClick={() => {
                                     setActiveItem(item.id);
                                     setMobileOpen(false);
@@ -162,14 +155,15 @@ export default function Sidebar({ onCollapseChange }: SidebarProps) {
                 </div>
 
                 {/* Bottom Section */}
-                <div className="p-2 border-t border-sidebar-border">
+                <div className="p-2">
                     <div className="space-y-1">
+                        {/* Settings */}
                         <button
                             className={`w-full flex items-center gap-3 h-10 px-3 rounded-md text-sidebar-foreground transition-all duration-200 
-                                hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:translate-x-1
-                                ${activeItem === 'settings' ? 'bg-sidebar-accent text-sidebar-accent-foreground' : ''}
-                                ${isCollapsed ? 'justify-center' : 'justify-start'}
-                            `}
+                hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:translate-x-1
+                ${activeItem === 'settings' ? 'bg-sidebar-accent text-sidebar-accent-foreground' : ''}
+                ${isCollapsed ? 'justify-center' : 'justify-start'}
+              `}
                             onClick={() => {
                                 setActiveItem('settings');
                                 setMobileOpen(false);
@@ -180,12 +174,13 @@ export default function Sidebar({ onCollapseChange }: SidebarProps) {
                             {!isCollapsed && 'Settings'}
                         </button>
 
+                        {/* Profile */}
                         <button
                             className={`w-full flex items-center gap-3 h-10 px-3 rounded-md text-sidebar-foreground transition-all duration-200 
-                                hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:translate-x-1
-                                ${activeItem === 'profile' ? 'bg-sidebar-accent text-sidebar-accent-foreground' : ''}
-                                ${isCollapsed ? 'justify-center' : 'justify-start'}
-                            `}
+                hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:translate-x-1
+                ${activeItem === 'profile' ? 'bg-sidebar-accent text-sidebar-accent-foreground' : ''}
+                ${isCollapsed ? 'justify-center' : 'justify-start'}
+              `}
                             onClick={() => {
                                 setActiveItem('profile');
                                 setMobileOpen(false);
