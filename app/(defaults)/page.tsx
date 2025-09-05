@@ -94,14 +94,11 @@ export default function Home() {
             className="relative w-full"
         >
             <div className="flex items-center bg-white dark:bg-muted rounded-full shadow-md border border-gray-200 dark:border-border px-4 py-2 w-full">
-                {/* Plus Button */}
                 <button type="button" className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                     </svg>
                 </button>
-
-                {/* Textarea */}
                 <textarea
                     ref={inputRef}
                     value={inputValue}
@@ -111,8 +108,6 @@ export default function Home() {
                     className="flex-1 resize-none px-3 py-2 bg-transparent focus:outline-none text-sm"
                     onKeyDown={handleKeyDown}
                 />
-
-                {/* Send Button */}
                 <button type="submit" className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-50 text-black transition">
                     <IconArrowUp />
                 </button>
@@ -122,7 +117,6 @@ export default function Home() {
 
     return (
         <>
-            {/* Gradient defs for icons */}
             <svg width="0" height="0">
                 <linearGradient id="pinkRedGradient" x1="0" y1="0" x2="1" y2="1">
                     <stop offset="0%" stopColor="#0046FF" />
@@ -132,24 +126,25 @@ export default function Home() {
 
             <div className="flex h-screen bg-background">
                 <Sidebar onCollapseChange={setIsSidebarCollapsed} />
-
                 <div className="flex-1 flex flex-col relative">
-                    {/* Fixed Header */}
                     <Header isCollapsed={isSidebarCollapsed} />
 
-                    {/* Chat messages area */}
-                    <main className="flex-1 overflow-y-auto mt-14 mb-20 p-6" ref={chatContainerRef}>
+                    {/* Chat area */}
+                    <main className={`flex-1 overflow-y-auto mt-14 p-6 ${hasMessages ? 'sm:pb-6 pb-[calc(4rem+10px)]' : ''}`} ref={chatContainerRef}>
                         {!hasMessages ? (
-                            <div className="flex flex-col justify-center items-center h-full">
-                                <div className="w-full max-w-3xl text-left">
-                                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="mb-8">
-                                        <h1 className="text-3xl sm:text-5xl font-semibold bg-gradient-to-r from-[#0046FF] to-[#FF3B3F] bg-clip-text text-transparent">
-                                            Hi {data?.personal?.full_name || 'Handsome'},
-                                            <br />
-                                            What would you like to know?
-                                        </h1>
-                                    </motion.div>
-                                </div>
+                            <div className="flex flex-col justify-center items-start h-full w-full max-w-3xl mx-auto px-6 sm:px-0">
+                                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="mb-6 w-full">
+                                    <h1 className="text-3xl sm:text-5xl font-semibold bg-gradient-to-r from-[#0046FF] to-[#FF3B3F] bg-clip-text text-transparent">
+                                        Hi {data?.personal?.full_name || 'Handsome'},
+                                        <br />
+                                        What would you like to know?
+                                    </h1>
+                                </motion.div>
+
+                                {/* Middle input (desktop only, before first msg) */}
+                                <motion.div key="initial-input" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="w-full hidden sm:block">
+                                    {InputBox}
+                                </motion.div>
                             </div>
                         ) : (
                             <div className="space-y-6 max-w-3xl mx-auto">
@@ -159,7 +154,6 @@ export default function Home() {
                                             <div className={`mb-2 inline-block max-w-full break-words ${message.role === 'gemini' ? 'prose dark:prose-invert max-w-none' : ''}`}>
                                                 {message.role === 'gemini' ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.text}</ReactMarkdown> : <p>{message.text}</p>}
                                             </div>
-
                                             {message.role === 'gemini' && (
                                                 <div className="flex mt-2 space-x-3">
                                                     <button onClick={() => handleCopy(message.text, index)} className="hover:scale-110 transition">
@@ -197,16 +191,22 @@ export default function Home() {
                             </div>
                         )}
                     </main>
-
-                    {/* Desktop input with padding bottom */}
-                    <div className="hidden sm:block w-full max-w-3xl mx-auto mt-auto pb-6">{InputBox}</div>
                 </div>
             </div>
 
-            {/* Mobile input fixed at bottom (no border line) */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-background sm:hidden">
+            {/* Bottom input (mobile always, desktop only after first msg) */}
+            <motion.div
+                key="bottom-input"
+                initial={{ y: 100, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.5 }}
+                className={`fixed bottom-0 right-0 p-4 bg-background
+                    ${hasMessages ? 'block' : 'block sm:hidden'}
+                    ${isSidebarCollapsed ? 'left-16' : 'left-64'}
+                `}
+            >
                 <div className="w-full max-w-3xl mx-auto">{InputBox}</div>
-            </div>
+            </motion.div>
         </>
     );
 }
