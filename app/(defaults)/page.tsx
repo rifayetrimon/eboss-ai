@@ -130,7 +130,7 @@ export default function Home() {
                     <Header isCollapsed={isSidebarCollapsed} />
 
                     {/* Chat area */}
-                    <main className={`flex-1 overflow-y-auto mt-14 p-6 ${hasMessages ? 'sm:pb-6 pb-[calc(4rem+10px)]' : ''}`} ref={chatContainerRef}>
+                    <main className={`flex-1 overflow-y-auto mt-14 p-6 ${hasMessages ? 'sm:pb-[calc(4rem+25px)] pb-[calc(4rem+25px)]' : ''}`} ref={chatContainerRef}>
                         {!hasMessages ? (
                             <div className="flex flex-col justify-center items-start h-full w-full max-w-3xl mx-auto px-6 sm:px-0">
                                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="mb-6 w-full">
@@ -200,10 +200,13 @@ export default function Home() {
                 initial={{ y: 100, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.5 }}
-                className={`fixed bottom-0 right-0 p-4 bg-background
-                    ${hasMessages ? 'block' : 'block sm:hidden'}
-                    ${isSidebarCollapsed ? 'left-16' : 'left-64'}
-                `}
+                className={`
+        fixed bottom-0 bg-background p-4
+        ${hasMessages ? 'block' : 'block sm:hidden'}
+        left-0 right-0 w-full
+        sm:w-auto
+        ${isSidebarCollapsed ? 'sm:left-16' : 'sm:left-64'} sm:right-0
+    `}
             >
                 <div className="w-full max-w-3xl mx-auto">{InputBox}</div>
             </motion.div>
