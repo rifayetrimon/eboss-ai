@@ -1,4 +1,3 @@
-import { Icon } from 'lucide-react';
 import React from 'react';
 
 interface MobileIconProps {

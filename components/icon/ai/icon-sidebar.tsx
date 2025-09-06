@@ -1,4 +1,3 @@
-// src/components/MobileIcon.tsx
 import React from 'react';
 
 interface MobileIconProps {

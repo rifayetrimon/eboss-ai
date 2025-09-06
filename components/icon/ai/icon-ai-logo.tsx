@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface MobileIconProps {
-    color?: string; // The color of the icon
+    color?: string;
     size?: number; // Width & height in px
     title?: string; // Accessible title
     className?: string; // Optional additional CSS classes

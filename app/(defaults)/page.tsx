@@ -20,6 +20,7 @@ export default function Home() {
     const [likedIndex, setLikedIndex] = useState<number | null>(null);
     const [dislikedIndex, setDislikedIndex] = useState<number | null>(null);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+    const [showUploadMenu, setShowUploadMenu] = useState(false);
 
     const inputRef = useRef<HTMLTextAreaElement | null>(null);
     const chatContainerRef = useRef<HTMLDivElement | null>(null);
@@ -93,12 +94,32 @@ export default function Home() {
             }}
             className="relative w-full"
         >
-            <div className="flex items-center bg-white dark:bg-muted rounded-full shadow-md border border-gray-200 dark:border-border px-4 py-2 w-full">
-                <button type="button" className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                </button>
+            <div className="flex items-center bg-white dark:bg-muted rounded-full shadow-md border border-gray-200 dark:border-border px-4 py-2 w-full relative">
+                {/* Plus button with dropdown */}
+                <div className="relative">
+                    <button
+                        type="button"
+                        onClick={() => setShowUploadMenu(!showUploadMenu)}
+                        className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                    </button>
+
+                    {/* Dropdown */}
+                    {showUploadMenu && (
+                        <div className="absolute bottom-12 left-0 w-56 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 z-50">
+                            <h4 className="text-sm font-medium mb-2">Add photos and file</h4>
+                            <label className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md cursor-pointer text-sm">
+                                <input type="file" accept="image/*,.pdf,.doc,.docx,.txt" className="hidden" />
+                                📁 Upload file
+                            </label>
+                        </div>
+                    )}
+                </div>
+
+                {/* Textarea */}
                 <textarea
                     ref={inputRef}
                     value={inputValue}
@@ -108,6 +129,8 @@ export default function Home() {
                     className="flex-1 resize-none px-3 py-2 bg-transparent focus:outline-none text-sm"
                     onKeyDown={handleKeyDown}
                 />
+
+                {/* Send button */}
                 <button type="submit" className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-50 text-black transition">
                     <IconArrowUp />
                 </button>
@@ -201,12 +224,12 @@ export default function Home() {
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.5 }}
                 className={`
-        fixed bottom-0 bg-background p-4
-        ${hasMessages ? 'block' : 'block sm:hidden'}
-        left-0 right-0 w-full
-        sm:w-auto
-        ${isSidebarCollapsed ? 'sm:left-16' : 'sm:left-64'} sm:right-0
-    `}
+          fixed bottom-0 bg-background p-4
+          ${hasMessages ? 'block' : 'block sm:hidden'}
+          left-0 right-0 w-full
+          sm:w-auto
+          ${isSidebarCollapsed ? 'sm:left-16' : 'sm:left-64'} sm:right-0
+        `}
             >
                 <div className="w-full max-w-3xl mx-auto">{InputBox}</div>
             </motion.div>
