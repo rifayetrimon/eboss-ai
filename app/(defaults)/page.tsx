@@ -4,12 +4,13 @@ import Sidebar from '@/components/layouts/sidebar';
 import { useProfile } from '@/hook/user/useProfile';
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FiCopy, FiThumbsUp, FiThumbsDown, FiPaperclip, FiPlus } from 'react-icons/fi';
+import { FiCopy, FiThumbsUp, FiThumbsDown, FiPaperclip, FiPlus, FiShare2 } from 'react-icons/fi';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import IconArrowUp from '@/components/icon/ai/icon-uparrow';
 import Header from '@/components/layouts/header';
 import { sendChatOrUpload } from '@/services/ai/chatApi';
+import PinIcon from '@/components/icon/ai/icon-pin';
 
 export default function Home() {
     const { data } = useProfile();
@@ -208,7 +209,7 @@ export default function Home() {
                     <button
                         type="button"
                         onClick={() => document.getElementById('train-file-input')?.click()}
-                        className="flex items-center gap-2 px-2 py-2 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                        className="flex items-center gap-2 px-2 py-2 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition text-gray-500"
                     >
                         <FiPlus className="w-4 h-4" />
                         Train AI
@@ -252,7 +253,15 @@ export default function Home() {
                                     <motion.div key={index} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
                                         <div className={`${message.role === 'user' ? 'text-right' : 'text-left'}`}>
                                             <div className={`mb-2 inline-block max-w-full break-words ${message.role === 'gemini' ? 'prose dark:prose-invert max-w-none' : ''}`}>
-                                                {message.role === 'gemini' ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.text}</ReactMarkdown> : <p>{message.text}</p>}
+                                                {message.role === 'gemini' ? (
+                                                    message.text.toLowerCase().includes('training completed') || message.text.toLowerCase().includes('success') ? (
+                                                        <div className="px-4 py-2 rounded-md bg-green-100 text-green-800 text-sm font-medium">{message.text}</div>
+                                                    ) : (
+                                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.text}</ReactMarkdown>
+                                                    )
+                                                ) : (
+                                                    <p>{message.text}</p>
+                                                )}
                                             </div>
                                             {message.role === 'gemini' && (
                                                 <div className="flex mt-2 space-x-3">
@@ -277,6 +286,12 @@ export default function Home() {
                                                             style={dislikedIndex === index ? { stroke: 'url(#pinkRedGradient)' } : {}}
                                                         />
                                                     </button>
+                                                    <button onClick={() => console.log('Share clicked', message.text)} className="hover:scale-110 transition">
+                                                        <FiShare2 size={14} className="text-black dark:text-white" />
+                                                    </button>
+                                                    <button onClick={() => console.log('Pin clicked', message.text)} className="hover:scale-110 transition">
+                                                        <PinIcon size={14} className="text-black dark:text-white" />
+                                                    </button>
                                                 </div>
                                             )}
                                         </div>
@@ -284,8 +299,12 @@ export default function Home() {
                                     </motion.div>
                                 ))}
                                 {isLoading && (
-                                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center text-muted-foreground mt-2">
-                                        Thinking...
+                                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-start space-x-2 mt-2">
+                                        <div className="px-4 py-2 rounded-md flex space-x-2">
+                                            <span className="w-2 h-2 rounded-full bg-gradient-to-r from-[#0046FF] to-[#FF3B3F] animate-pulse" style={{ animationDelay: '0ms' }} />
+                                            <span className="w-2 h-2 rounded-full bg-gradient-to-r from-[#0046FF] to-[#FF3B3F] animate-pulse" style={{ animationDelay: '200ms' }} />
+                                            <span className="w-2 h-2 rounded-full bg-gradient-to-r from-[#0046FF] to-[#FF3B3F] animate-pulse" style={{ animationDelay: '400ms' }} />
+                                        </div>
                                     </motion.div>
                                 )}
                             </div>
