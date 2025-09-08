@@ -10,7 +10,7 @@ export const sendChatMessage = async (payload: ChatRequest) => {
     const encryptedKey = localStorage.getItem('x-encrypted-key');
     if (!encryptedKey) throw new Error('Encrypted key missing');
 
-    const url = 'https://devapi02.awfatech.com/llm/api/v1/llm/chat-with-resources';
+    const url = 'https://devapi02.awfatech.com/api/v1/llm/chat-with-resources';
 
     const response = await fetch(url, {
         method: 'POST',
