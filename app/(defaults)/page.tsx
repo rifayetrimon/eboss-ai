@@ -4,12 +4,12 @@ import Sidebar from '@/components/layouts/sidebar';
 import { useProfile } from '@/hook/user/useProfile';
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FiCopy, FiThumbsUp, FiThumbsDown } from 'react-icons/fi';
-import { basePath } from '@/next.config';
+import { FiCopy, FiThumbsUp, FiThumbsDown, FiPaperclip } from 'react-icons/fi';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import IconArrowUp from '@/components/icon/ai/icon-uparrow';
 import Header from '@/components/layouts/header';
+import { sendChatMessage } from '@/services/ai/chatApi';
 
 export default function Home() {
     const { data } = useProfile();
@@ -24,6 +24,7 @@ export default function Home() {
 
     const inputRef = useRef<HTMLTextAreaElement | null>(null);
     const chatContainerRef = useRef<HTMLDivElement | null>(null);
+    const uploadMenuRef = useRef<HTMLDivElement | null>(null);
 
     const handleSendMessage = async (message?: string) => {
         const userMessage = message ?? inputValue.trim();
@@ -34,20 +35,22 @@ export default function Home() {
         setConversation((prev) => [...prev, { role: 'user', text: userMessage }]);
 
         try {
-            const response = await fetch(`${basePath}/apps/api`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: userMessage }),
+            const data = await sendChatMessage({
+                message: userMessage,
+                session_id: localStorage.getItem('session_id') || 'default-session',
             });
 
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.error || 'Failed to get response');
-
-            setConversation((prev) => [...prev, { role: 'gemini', text: data.text || data.message || 'No response from AI.' }]);
+            setConversation((prev) => [
+                ...prev,
+                {
+                    role: 'gemini',
+                    text: data?.text || data?.message || 'No response from AI.',
+                },
+            ]);
         } catch (error: any) {
             let errorMessage = 'Sorry, something went wrong. Please try again.';
-            if (error.message?.includes('API key')) {
-                errorMessage = '⚠️ Invalid API key. Please check your GEMINI_API_KEY in .env.local.';
+            if (error.message?.includes('Encrypted key missing')) {
+                errorMessage = '⚠️ Encrypted key missing. Please login again.';
             }
             setConversation((prev) => [...prev, { role: 'gemini', text: errorMessage }]);
         } finally {
@@ -78,11 +81,23 @@ export default function Home() {
         }
     };
 
+    // Auto-scroll
     useEffect(() => {
         if (chatContainerRef.current) {
             chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
         }
     }, [conversation]);
+
+    // Close upload menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (uploadMenuRef.current && !uploadMenuRef.current.contains(event.target as Node)) {
+                setShowUploadMenu(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     const hasMessages = conversation.length > 0;
 
@@ -96,7 +111,7 @@ export default function Home() {
         >
             <div className="flex items-center bg-white dark:bg-muted rounded-full shadow-md border border-gray-200 dark:border-border px-4 py-2 w-full relative">
                 {/* Plus button with dropdown */}
-                <div className="relative">
+                <div className="relative" ref={uploadMenuRef}>
                     <button
                         type="button"
                         onClick={() => setShowUploadMenu(!showUploadMenu)}
@@ -110,10 +125,10 @@ export default function Home() {
                     {/* Dropdown */}
                     {showUploadMenu && (
                         <div className="absolute bottom-12 left-0 w-56 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 z-50">
-                            <h4 className="text-sm font-medium mb-2">Add photos and file</h4>
                             <label className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md cursor-pointer text-sm">
+                                <FiPaperclip className="w-4 h-4 text-gray-600 dark:text-gray-300" />
                                 <input type="file" accept="image/*,.pdf,.doc,.docx,.txt" className="hidden" />
-                                📁 Upload file
+                                Upload file
                             </label>
                         </div>
                     )}
@@ -224,12 +239,12 @@ export default function Home() {
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.5 }}
                 className={`
-          fixed bottom-0 bg-background p-4
-          ${hasMessages ? 'block' : 'block sm:hidden'}
-          left-0 right-0 w-full
-          sm:w-auto
-          ${isSidebarCollapsed ? 'sm:left-16' : 'sm:left-64'} sm:right-0
-        `}
+                    fixed bottom-0 bg-background p-4
+                    ${hasMessages ? 'block' : 'block sm:hidden'}
+                    left-0 right-0 w-full
+                    sm:w-auto
+                    ${isSidebarCollapsed ? 'sm:left-16' : 'sm:left-64'} sm:right-0
+                `}
             >
                 <div className="w-full max-w-3xl mx-auto">{InputBox}</div>
             </motion.div>
