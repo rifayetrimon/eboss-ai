@@ -48,7 +48,7 @@ export const sendChatOrUpload = async (payload: ChatRequest) => {
             body: JSON.stringify({
                 message: payload.message,
                 session_id: payload.session_id,
-                category: payload.category || 'company_background',
+                category: payload.category,
                 max_results: payload.max_results ?? 5,
                 include_metadata: payload.include_metadata ?? false,
             }),
