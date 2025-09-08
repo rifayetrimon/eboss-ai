@@ -9,11 +9,12 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import IconArrowUp from '@/components/icon/ai/icon-uparrow';
 import Header from '@/components/layouts/header';
-import { sendChatMessage } from '@/services/ai/chatApi';
+import { sendChatOrUpload } from '@/services/ai/chatApi'; // <-- updated import
 
 export default function Home() {
     const { data } = useProfile();
     const [inputValue, setInputValue] = useState('');
+    const [file, setFile] = useState<File | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [conversation, setConversation] = useState<{ role: string; text: string }[]>([]);
     const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
@@ -28,15 +29,22 @@ export default function Home() {
 
     const handleSendMessage = async (message?: string) => {
         const userMessage = message ?? inputValue.trim();
-        if (!userMessage) return;
+        if (!userMessage && !file) return;
 
         setIsLoading(true);
         setInputValue('');
-        setConversation((prev) => [...prev, { role: 'user', text: userMessage }]);
+
+        if (userMessage) {
+            setConversation((prev) => [...prev, { role: 'user', text: userMessage }]);
+        }
+        if (file) {
+            setConversation((prev) => [...prev, { role: 'user', text: `📂 Uploaded: ${file.name}` }]);
+        }
 
         try {
-            const data = await sendChatMessage({
-                message: userMessage,
+            const data = await sendChatOrUpload({
+                message: userMessage || undefined,
+                file: file || undefined,
                 session_id: localStorage.getItem('session_id') || 'default-session',
             });
 
@@ -55,6 +63,14 @@ export default function Home() {
             setConversation((prev) => [...prev, { role: 'gemini', text: errorMessage }]);
         } finally {
             setIsLoading(false);
+            setFile(null); // clear file after sending
+        }
+    };
+
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (event.target.files?.length) {
+            setFile(event.target.files[0]);
+            setShowUploadMenu(false);
         }
     };
 
@@ -127,7 +143,7 @@ export default function Home() {
                         <div className="absolute bottom-12 left-0 w-56 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 z-50">
                             <label className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md cursor-pointer text-sm">
                                 <FiPaperclip className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-                                <input type="file" accept="image/*,.pdf,.doc,.docx,.txt" className="hidden" />
+                                <input type="file" accept="image/*,.pdf,.doc,.docx,.txt" className="hidden" onChange={handleFileChange} />
                                 Upload file
                             </label>
                         </div>
@@ -139,14 +155,14 @@ export default function Home() {
                     ref={inputRef}
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
-                    placeholder="Ask anything"
+                    placeholder={file ? `Attached: ${file.name}` : 'Ask anything'}
                     rows={1}
                     className="flex-1 resize-none px-3 py-2 bg-transparent focus:outline-none text-sm"
                     onKeyDown={handleKeyDown}
                 />
 
                 {/* Send button */}
-                <button type="submit" className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-50 text-black transition">
+                <button type="submit" className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-50 text-black transition disabled:opacity-50" disabled={!inputValue.trim() && !file}>
                     <IconArrowUp />
                 </button>
             </div>
