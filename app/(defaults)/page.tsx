@@ -22,11 +22,11 @@ export default function Home() {
     const [likedIndex, setLikedIndex] = useState<number | null>(null);
     const [dislikedIndex, setDislikedIndex] = useState<number | null>(null);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-    const [showUploadMenu, setShowUploadMenu] = useState(false);
 
     const inputRef = useRef<HTMLTextAreaElement | null>(null);
     const chatContainerRef = useRef<HTMLDivElement | null>(null);
-    const uploadMenuRef = useRef<HTMLDivElement | null>(null);
+    const attachmentInputRef = useRef<HTMLInputElement | null>(null);
+    const trainInputRef = useRef<HTMLInputElement | null>(null);
 
     const handleSendMessage = async (message?: string) => {
         const userMessage = message ?? inputValue.trim();
@@ -35,7 +35,6 @@ export default function Home() {
         setIsLoading(true);
         setInputValue('');
 
-        // Show user message & file in UI
         if (userMessage) {
             setConversation((prev) => [...prev, { role: 'user', text: userMessage }]);
         }
@@ -70,15 +69,12 @@ export default function Home() {
         }
     };
 
-    // For plus icon → only attach file, no API call
     const handleFileAttach = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files?.length) {
             setFile(event.target.files[0]);
-            setShowUploadMenu(false);
         }
     };
 
-    // For Train AI → attach file + call API immediately
     const handleTrainFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files?.length) {
             const trainFile = event.target.files[0];
@@ -101,7 +97,7 @@ export default function Home() {
                         text: data?.data?.response || data?.message || 'Training completed, no response received.',
                     },
                 ]);
-            } catch (error) {
+            } catch {
                 setConversation((prev) => [...prev, { role: 'gemini', text: '⚠️ Training failed. Please try again.' }]);
             } finally {
                 setIsLoading(false);
@@ -133,23 +129,11 @@ export default function Home() {
         }
     };
 
-    // Auto-scroll
     useEffect(() => {
         if (chatContainerRef.current) {
             chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
         }
     }, [conversation]);
-
-    // Close upload menu when clicking outside
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (uploadMenuRef.current && !uploadMenuRef.current.contains(event.target as Node)) {
-                setShowUploadMenu(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
 
     const hasMessages = conversation.length > 0;
 
@@ -162,59 +146,44 @@ export default function Home() {
             className="relative w-full"
         >
             <div className="flex flex-col bg-white dark:bg-muted rounded-lg shadow-md border border-gray-200 dark:border-border px-4 py-2 w-full relative">
-                {/* Top row: Plus + Textarea + Send */}
-                <div className="flex gap-1">
-                    {/* Upload menu */}
-                    <div className="relative" ref={uploadMenuRef}>
+                <textarea
+                    ref={inputRef}
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    placeholder={file ? `Attached: ${file.name}` : 'Ask anything'}
+                    rows={2}
+                    className="flex-1 resize-none px-3 py-2 bg-transparent focus:outline-none text-sm"
+                    onKeyDown={handleKeyDown}
+                />
+
+                <div className="mt-2 flex items-center justify-between">
+                    <div className="flex items-center gap-0">
+                        {/* Attachment */}
                         <button
                             type="button"
-                            onClick={() => setShowUploadMenu(!showUploadMenu)}
-                            className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                            onClick={() => attachmentInputRef.current?.click()}
+                            className="inline-flex items-center justify-center gap-1 h-9 px-2 text-sm rounded-md text-gray-400 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-gray-700 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                            </svg>
+                            <FiPaperclip className="w-4 h-4" />
+                            Attachment
                         </button>
+                        <input ref={attachmentInputRef} type="file" accept="image/*,.pdf,.doc,.docx,.txt" className="hidden" onChange={handleFileAttach} />
 
-                        {showUploadMenu && (
-                            <div className="absolute bottom-12 left-0 w-56 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 z-50">
-                                <label className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md cursor-pointer text-sm">
-                                    <FiPaperclip className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-                                    <input type="file" accept="image/*,.pdf,.doc,.docx,.txt" className="hidden" onChange={handleFileAttach} />
-                                    Upload file
-                                </label>
-                            </div>
-                        )}
+                        {/* Train AI */}
+                        <button
+                            type="button"
+                            onClick={() => trainInputRef.current?.click()}
+                            className="inline-flex items-center justify-center gap-1 h-9 px-2 text-sm rounded-md text-gray-400 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
+                        >
+                            <FiPlus className="w-4 h-4" />
+                            TrainAI
+                        </button>
+                        <input ref={trainInputRef} type="file" accept="image/*,.pdf,.doc,.docx,.txt" className="hidden" onChange={handleTrainFileChange} />
                     </div>
 
-                    {/* Textarea */}
-                    <textarea
-                        ref={inputRef}
-                        value={inputValue}
-                        onChange={(e) => setInputValue(e.target.value)}
-                        placeholder={file ? `Attached: ${file.name}` : 'Ask anything'}
-                        rows={2}
-                        className="flex-1 resize-none px-3 py-2 bg-transparent focus:outline-none text-sm"
-                        onKeyDown={handleKeyDown}
-                    />
-
-                    {/* Send button */}
                     <button type="submit" className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-50 text-black transition disabled:opacity-50" disabled={!inputValue.trim() && !file}>
                         <IconArrowUp />
                     </button>
-                </div>
-
-                {/* Bottom row: Train button */}
-                <div className="mt-2 flex justify-start">
-                    <button
-                        type="button"
-                        onClick={() => document.getElementById('train-file-input')?.click()}
-                        className="flex items-center gap-2 px-2 py-2 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition text-gray-500"
-                    >
-                        <FiPlus className="w-4 h-4" />
-                        Train AI
-                    </button>
-                    <input id="train-file-input" type="file" accept="image/*,.pdf,.doc,.docx,.txt" className="hidden" onChange={handleTrainFileChange} />
                 </div>
             </div>
         </form>
