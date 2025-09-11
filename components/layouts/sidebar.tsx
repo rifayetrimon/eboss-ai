@@ -148,7 +148,7 @@ export default function Sidebar({ onCollapseChange }: SidebarProps) {
                                     alt="Profile picture"
                                     width={32}
                                     height={32}
-                                    className="h-8 w-8 rounded-full object-cover flex-shrink-0"
+                                    className="h-8 w-8 rounded-full object-cover flex-shrink-0 min-w-[32px] min-h-[32px]"
                                 />
                                 <span>Profile</span>
                             </button>
@@ -166,7 +166,7 @@ export default function Sidebar({ onCollapseChange }: SidebarProps) {
                 {/* Header */}
                 <div className="flex items-center justify-between h-14 px-4">
                     <div
-                        className="flex items-center justify-center w-10 h-10 bg-blue-50 rounded-lg cursor-pointer hover:bg-blue-100"
+                        className="flex items-center justify-center min-w-[40px] min-h-[40px] w-10 h-10 bg-blue-50 rounded-lg cursor-pointer hover:bg-blue-100 flex-shrink-0"
                         onMouseEnter={() => setHoverApp(true)}
                         onMouseLeave={() => setHoverApp(false)}
                         onClick={() => setIsCollapsed(!isCollapsed)}
@@ -200,7 +200,7 @@ export default function Sidebar({ onCollapseChange }: SidebarProps) {
                             >
                                 <Icon className="h-4 w-4 flex-shrink-0" />
 
-                                {/* Animate text fade in/out like CSSTransition */}
+                                {/* Animate text fade in/out */}
                                 <AnimatePresence mode="wait">
                                     {!isCollapsed && (
                                         <motion.span key="label" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="whitespace-nowrap">
@@ -241,7 +241,7 @@ export default function Sidebar({ onCollapseChange }: SidebarProps) {
                             alt="Profile picture"
                             width={32}
                             height={32}
-                            className="h-8 w-8 rounded-full object-cover flex-shrink-0"
+                            className="h-8 w-8 rounded-full object-cover flex-shrink-0 min-w-[32px] min-h-[32px]"
                         />
                         <AnimatePresence mode="wait">
                             {!isCollapsed && (
