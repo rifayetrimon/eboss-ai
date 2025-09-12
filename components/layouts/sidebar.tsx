@@ -27,7 +27,7 @@ export default function Sidebar({ onCollapseChange, activeItem, setActiveItem }:
 
     // base nav items (without NewChat)
     const navigationItems = [
-        { id: 'Personal', icon: IconAdd, label: 'Personal' },
+        { id: 'Personality', icon: IconAdd, label: 'Personality' },
         { id: 'Chat', icon: Home, label: 'Chat' },
         { id: 'Training', icon: History, label: 'Training' },
     ];

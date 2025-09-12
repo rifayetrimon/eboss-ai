@@ -17,7 +17,7 @@ export default function HomePage() {
 
     const renderContent = () => {
         switch (activeItem) {
-            case 'Personal':
+            case 'Personality':
                 return <PersonalContent />;
             case 'Training':
                 return <TrainingContent />;

@@ -180,6 +180,7 @@ export default function ChatContent({ userName = 'Handsome', isSidebarCollapsed 
                             {InputBox}
                         </motion.div>
                     </div>
+                    
                 ) : (
                     <div className="space-y-6 max-w-3xl mx-auto">
                         {conversation.map((message, index) => (
