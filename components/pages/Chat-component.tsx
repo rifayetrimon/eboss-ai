@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FiCopy, FiThumbsUp, FiThumbsDown, FiPaperclip, FiPlus, FiShare2 } from 'react-icons/fi';
+import { FiCopy, FiThumbsUp, FiThumbsDown, FiPaperclip, FiShare2 } from 'react-icons/fi';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import IconArrowUp from '@/components/icon/ai/icon-uparrow';
@@ -11,7 +11,7 @@ import { sendChatOrUpload } from '@/services/ai/chatApi';
 
 interface ChatContentProps {
     userName?: string;
-    isSidebarCollapsed: boolean; // Add this prop to know sidebar state
+    isSidebarCollapsed: boolean;
 }
 
 export default function ChatContent({ userName = 'Handsome', isSidebarCollapsed }: ChatContentProps) {
@@ -26,9 +26,8 @@ export default function ChatContent({ userName = 'Handsome', isSidebarCollapsed 
     const inputRef = useRef<HTMLTextAreaElement | null>(null);
     const chatContainerRef = useRef<HTMLDivElement | null>(null);
     const attachmentInputRef = useRef<HTMLInputElement | null>(null);
-    const fileTrainInputRef = useRef<HTMLInputElement | null>(null);
 
-    const handleSendMessage = async (message?: string, isTraining = false) => {
+    const handleSendMessage = async (message?: string) => {
         const userMessage = message ?? inputValue.trim();
         if (!userMessage && !file) return;
 
@@ -36,9 +35,7 @@ export default function ChatContent({ userName = 'Handsome', isSidebarCollapsed 
         setInputValue('');
 
         let displayUserMessage = userMessage;
-        if (isTraining) {
-            displayUserMessage = `🤖 Training AI with: ${userMessage || file?.name}`;
-        } else if (file && !userMessage) {
+        if (file && !userMessage) {
             displayUserMessage = `📂 Uploaded: ${file.name}`;
         }
 
@@ -50,7 +47,6 @@ export default function ChatContent({ userName = 'Handsome', isSidebarCollapsed 
             const data = await sendChatOrUpload({
                 message: userMessage || undefined,
                 file: file || undefined,
-                category: isTraining || file ? 'company_background' : undefined,
                 session_id: localStorage.getItem('session_id') || 'default-session',
             });
 
@@ -73,11 +69,11 @@ export default function ChatContent({ userName = 'Handsome', isSidebarCollapsed 
         }
     };
 
-    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>, isTraining = false) => {
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files?.length) {
             const uploadedFile = event.target.files[0];
             setFile(uploadedFile);
-            handleSendMessage(uploadedFile.name, isTraining);
+            handleSendMessage(uploadedFile.name);
             event.target.value = '';
         }
     };
@@ -131,7 +127,6 @@ export default function ChatContent({ userName = 'Handsome', isSidebarCollapsed 
                     className="flex-1 resize-none px-3 py-2 bg-transparent focus:outline-none text-sm"
                     onKeyDown={handleKeyDown}
                 />
-
                 <div className="mt-2 flex items-center justify-between">
                     <div className="flex items-center gap-0">
                         <button
@@ -142,17 +137,7 @@ export default function ChatContent({ userName = 'Handsome', isSidebarCollapsed 
                             <FiPaperclip className="w-4 h-4" />
                             Attachment
                         </button>
-                        <input ref={attachmentInputRef} type="file" accept="image/*,.pdf,.doc,.docx,.txt" className="hidden" onChange={(e) => handleFileChange(e, false)} />
-
-                        <button
-                            type="button"
-                            onClick={() => fileTrainInputRef.current?.click()}
-                            className="inline-flex items-center justify-center gap-1 h-9 px-2 text-sm rounded-md text-gray-400 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
-                        >
-                            <FiPlus className="w-4 h-4" />
-                            Train AI
-                        </button>
-                        <input ref={fileTrainInputRef} type="file" accept="image/*,.pdf,.doc,.docx,.txt" className="hidden" onChange={(e) => handleFileChange(e, true)} />
+                        <input ref={attachmentInputRef} type="file" accept="image/*,.pdf,.doc,.docx,.txt" className="hidden" onChange={(e) => handleFileChange(e)} />
                     </div>
 
                     <button type="submit" className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-50 text-black transition disabled:opacity-50" disabled={!inputValue.trim() && !file}>
@@ -176,8 +161,8 @@ export default function ChatContent({ userName = 'Handsome', isSidebarCollapsed 
                 className="absolute inset-0 overflow-y-auto px-6"
                 ref={chatContainerRef}
                 style={{
-                    top: '76px', // 56px header height + 20px padding
-                    bottom: '84px', // ~64px input field height + 20px padding
+                    top: '76px',
+                    bottom: '84px',
                     paddingTop: '0px',
                     paddingBottom: '0px',
                 }}
@@ -201,15 +186,7 @@ export default function ChatContent({ userName = 'Handsome', isSidebarCollapsed 
                             <motion.div key={index} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
                                 <div className={`${message.role === 'user' ? 'text-right' : 'text-left'}`}>
                                     <div className={`mb-2 inline-block max-w-full break-words ${message.role === 'gemini' ? 'prose dark:prose-invert max-w-none' : ''}`}>
-                                        {message.role === 'gemini' ? (
-                                            message.text.toLowerCase().includes('training completed') || message.text.toLowerCase().includes('success') ? (
-                                                <div className="px-4 py-2 rounded-md bg-green-100 text-green-800 text-sm font-medium">{message.text}</div>
-                                            ) : (
-                                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.text}</ReactMarkdown>
-                                            )
-                                        ) : (
-                                            <p>{message.text}</p>
-                                        )}
+                                        {message.role === 'gemini' ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.text}</ReactMarkdown> : <p>{message.text}</p>}
                                     </div>
                                     {message.role === 'gemini' && (
                                         <div className="flex mt-2 space-x-3">
@@ -259,7 +236,7 @@ export default function ChatContent({ userName = 'Handsome', isSidebarCollapsed 
                 )}
             </div>
 
-            {/* Bottom input fixed bar - now responsive to sidebar */}
+            {/* Bottom input fixed bar */}
             <motion.div
                 key="bottom-input"
                 initial={{ y: 100, opacity: 0 }}
@@ -268,11 +245,7 @@ export default function ChatContent({ userName = 'Handsome', isSidebarCollapsed 
                 className={`
                     fixed bottom-0 bg-background p-4 z-40
                     ${hasMessages ? 'block' : 'block sm:hidden'}
-                    ${
-                        isSidebarCollapsed
-                            ? 'md:left-16' // When collapsed (64px = 16*4)
-                            : 'md:left-64' // When expanded (256px = 64*4)
-                    } 
+                    ${isSidebarCollapsed ? 'md:left-16' : 'md:left-64'} 
                     left-0 right-0 md:right-0
                 `}
             >

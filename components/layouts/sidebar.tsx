@@ -60,10 +60,15 @@ export default function Sidebar({ onCollapseChange, activeItem, setActiveItem }:
             return (
                 <motion.button
                     key={item.id}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -10 }}
-                    transition={{ duration: 0.2, delay: index * 0.05 }}
+                    // Only apply initial/animate/exit for mobile or dynamic items
+                    {...(!isCollapsed || isMobile
+                        ? {
+                              initial: { opacity: 0, x: -10 },
+                              animate: { opacity: 1, x: 0 },
+                              exit: { opacity: 0, x: -10 },
+                              transition: { duration: 0.2, delay: index * 0.05 },
+                          }
+                        : {})}
                     className={`w-full flex items-center gap-3 h-10 px-3 rounded-md text-gray-700 transition-all duration-200
                         hover:bg-gray-100 hover:translate-x-1
                         ${activeItem === item.id ? 'bg-gray-200 font-medium' : ''}
@@ -75,7 +80,9 @@ export default function Sidebar({ onCollapseChange, activeItem, setActiveItem }:
                     title={!isMobile && isCollapsed ? item.label : undefined}
                 >
                     <Icon className="h-4 w-4 flex-shrink-0" />
-                    <AnimatePresence mode="wait">
+                    <AnimatePresence mode="wait" initial={false}>
+                        {' '}
+                        {/* Added initial={false} here */}
                         {(!isCollapsed || isMobile) && (
                             <motion.span key={item.label} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="whitespace-nowrap">
                                 {item.label}
@@ -178,6 +185,7 @@ export default function Sidebar({ onCollapseChange, activeItem, setActiveItem }:
                         onMouseEnter={() => setHoverApp(true)}
                         onMouseLeave={() => setHoverApp(false)}
                         onClick={() => setIsCollapsed(!isCollapsed)}
+                        aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                     >
                         {isCollapsed && hoverApp ? <IconSidebar size={20} className="text-blue-600" /> : <IconAiLogo className="h-6 w-6 text-blue-600" />}
                     </div>
@@ -201,9 +209,11 @@ export default function Sidebar({ onCollapseChange, activeItem, setActiveItem }:
                         title={isCollapsed ? 'Settings' : undefined}
                     >
                         <IconSettings className="h-4 w-4 flex-shrink-0" />
-                        <AnimatePresence>
+                        <AnimatePresence mode="wait" initial={false}>
+                            {' '}
+                            {/* Added initial={false} here */}
                             {!isCollapsed && (
-                                <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+                                <motion.span key="settings" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
                                     Settings
                                 </motion.span>
                             )}

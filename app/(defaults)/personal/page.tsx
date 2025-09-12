@@ -1,17 +1,65 @@
 'use client';
 
-import Sidebar from '@/components/layouts/sidebar';
-import { useProfile } from '@/hook/user/useProfile';
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FiCopy, FiThumbsUp, FiThumbsDown, FiPaperclip, FiPlus, FiShare2 } from 'react-icons/fi';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import IconArrowUp from '@/components/icon/ai/icon-uparrow';
-import Header from '@/components/layouts/header';
-import { sendChatOrUpload } from '@/services/ai/chatApi';
 import PinIcon from '@/components/icon/ai/icon-pin';
+import { sendChatOrUpload } from '@/services/ai/chatApi';
+import { useProfile } from '@/hook/user/useProfile';
 
+//
+// Sidebar
+//
+function Sidebar({ onCollapseChange }: { onCollapseChange: (collapsed: boolean) => void }) {
+    const [collapsed, setCollapsed] = useState(false);
+
+    const toggleSidebar = () => {
+        const newState = !collapsed;
+        setCollapsed(newState);
+        onCollapseChange(newState);
+    };
+
+    return (
+        <motion.div animate={{ width: collapsed ? '4rem' : '16rem' }} transition={{ duration: 0.3 }} className="h-screen bg-gray-900 text-white flex flex-col fixed left-0 top-0 z-20">
+            <button onClick={toggleSidebar} className="p-4 hover:bg-gray-800 text-center">
+                {collapsed ? '➡️' : '⬅️'}
+            </button>
+
+            <nav className="flex flex-col mt-4 space-y-2">
+                <a href="#" className="px-4 py-2 hover:bg-gray-800 rounded">
+                    Home
+                </a>
+                <a href="#" className="px-4 py-2 hover:bg-gray-800 rounded">
+                    Chats
+                </a>
+                <a href="#" className="px-4 py-2 hover:bg-gray-800 rounded">
+                    Settings
+                </a>
+            </nav>
+        </motion.div>
+    );
+}
+
+//
+// Header
+//
+function Header({ isCollapsed }: { isCollapsed: boolean }) {
+    return (
+        <header
+            className={`fixed top-0 h-14 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 z-10 transition-all duration-300 
+      ${isCollapsed ? 'left-16' : 'left-64'} right-0 flex items-center px-4`}
+        >
+            <h1 className="text-lg font-semibold">Personal Page</h1>
+        </header>
+    );
+}
+
+//
+// PersonalPage
+//
 export default function PersonalPage() {
     const { data } = useProfile();
     const [inputValue, setInputValue] = useState('');
@@ -199,8 +247,8 @@ export default function PersonalPage() {
             </svg>
 
             <div className="flex h-screen bg-background">
-                {/* <Sidebar onCollapseChange={setIsSidebarCollapsed} /> */}
-                <div className="flex-1 flex flex-col relative">
+                <Sidebar onCollapseChange={setIsSidebarCollapsed} />
+                <div className="flex-1 flex flex-col relative ml-16 sm:ml-64 transition-all duration-300">
                     <Header isCollapsed={isSidebarCollapsed} />
                     <main className={`flex-1 overflow-y-auto mt-14 mb-14 p-6 ${hasMessages ? 'sm:pb-[calc(4rem+25px)] pb-[calc(4rem+25px)]' : ''}`} ref={chatContainerRef}>
                         {!hasMessages ? (
@@ -282,18 +330,19 @@ export default function PersonalPage() {
                 </div>
             </div>
 
+            {/* Bottom input */}
             <motion.div
                 key="bottom-input"
                 initial={{ y: 100, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.5 }}
                 className={`
-                    fixed bottom-0 bg-background p-4
-                    ${hasMessages ? 'block' : 'block sm:hidden'}
-                    left-0 right-0 w-full
-                    sm:w-auto
-                    ${isSidebarCollapsed ? 'sm:left-16' : 'sm:left-64'} sm:right-0
-                `}
+          fixed bottom-0 bg-background p-4
+          ${hasMessages ? 'block' : 'block sm:hidden'}
+          left-0 right-0 w-full
+          sm:w-auto
+          ${isSidebarCollapsed ? 'sm:left-16' : 'sm:left-64'} sm:right-0
+        `}
             >
                 <div className="w-full max-w-3xl mx-auto">{InputBox}</div>
             </motion.div>

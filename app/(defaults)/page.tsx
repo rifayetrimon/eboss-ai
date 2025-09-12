@@ -33,6 +33,7 @@ export default function HomePage() {
 
     return (
         <>
+            {/* Gradient Def */}
             <svg width="0" height="0">
                 <linearGradient id="pinkRedGradient" x1="0" y1="0" x2="1" y2="1">
                     <stop offset="0%" stopColor="#0046FF" />
@@ -41,9 +42,14 @@ export default function HomePage() {
             </svg>
 
             <div className="flex h-screen bg-background">
+                {/* Sidebar */}
                 <Sidebar onCollapseChange={setIsSidebarCollapsed} activeItem={activeItem} setActiveItem={setActiveItem} />
+
+                {/* Main area */}
                 <div className="flex-1 flex flex-col relative">
-                    <Header isCollapsed={isSidebarCollapsed} />
+                    {/* ✅ Pass activeItem into Header */}
+                    <Header isCollapsed={isSidebarCollapsed} activeItem={activeItem} />
+
                     <main className={`flex-1 overflow-y-auto ${activeItem === 'Chat' ? 'p-0' : 'p-6'}`}>{renderContent()}</main>
                 </div>
             </div>
