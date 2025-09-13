@@ -1,39 +1,22 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { usePersonality } from '@/hook/ai/usePersonality';
 
 export default function PersonalContent() {
-    // Demo data (replace with API later)
-    const [data, setData] = useState({
-        name: 'Mamat',
-        description: 'Creative marketing specialist and branding expert',
-        specialization: 'Marketing, branding, and creative strategy',
-        personality_traits: [
-            'Creative and innovative thinking',
-            'Passionate about branding and marketing',
-            'Uses modern marketing terminology',
-            'Enthusiastic about customer engagement',
-            'Provides strategic marketing insights',
-            'Friendly and approachable',
-            'Speaks in a mix of English and casual Malay',
-            "Uses expressions like 'Awesome', 'Great idea', 'Let's make it happen'",
-        ],
-        temperature: 0.8,
-        max_tokens: 1000,
-        current_expertise: 'marketer',
-        image: 'https://devapi02.awfatech.com/images/marketer.png',
-    });
+    const { data, isLoading, isError, error } = usePersonality();
 
-    const [expertiseList] = useState<string[]>(['marketer', 'developer', 'designer', 'strategist']);
-    const [selectedExpertise, setSelectedExpertise] = useState(data.current_expertise);
+    if (isLoading) {
+        return <div className="p-10">Loading...</div>;
+    }
 
-    useEffect(() => {
-        setData((prev) => ({
-            ...prev,
-            current_expertise: selectedExpertise,
-        }));
-    }, [selectedExpertise]);
+    if (isError) {
+        return <div className="p-10 text-red-500">Error: {(error as Error).message}</div>;
+    }
+
+    if (!data) {
+        return null;
+    }
 
     return (
         <div className="relative min-h-screen w-full bg-gradient-to-br from-indigo-100 via-pink-100 to-purple-200 dark:from-gray-900 dark:via-gray-800 dark:to-indigo-900">
@@ -71,7 +54,7 @@ export default function PersonalContent() {
                         <div className="mb-6 w-full bg-white/70 dark:bg-gray-800/70 backdrop-blur-md rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
                             <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">Personality Traits</h2>
                             <ul className="list-disc pl-6 space-y-2 text-gray-700 dark:text-gray-300 text-left">
-                                {data.personality_traits.map((trait, idx) => (
+                                {(data.personality_traits as string[]).map((trait: string, idx: number) => (
                                     <li key={idx}>{trait}</li>
                                 ))}
                             </ul>
