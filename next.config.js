@@ -5,12 +5,12 @@ module.exports = {
     reactStrictMode: false,
     eslint: { ignoreDuringBuilds: true },
     output: 'standalone',
-    basePath: isProd ? '/eboss-ai' : '',
-    assetPrefix: isProd ? '/eboss-ai' : '',
+    basePath: isProd ? '/eboss-ai-chat' : '',
+    assetPrefix: isProd ? '/eboss-ai-chat' : '',
     images: {
         domains: ['devsec.awfatech.com'],
     },
     env: {
-        NEXT_PUBLIC_BASE_PATH: isProd ? '/eboss-ai' : '',
+        NEXT_PUBLIC_BASE_PATH: isProd ? '/eboss-ai-chat' : '',
     },
 };
