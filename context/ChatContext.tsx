@@ -25,17 +25,6 @@ export default function ChatContent({ userName = 'Handsome', isSidebarCollapsed 
     const inputRef = useRef<HTMLTextAreaElement | null>(null);
     const chatContainerRef = useRef<HTMLDivElement | null>(null);
 
-    // ✅ Reset chat when Sidebar triggers "newChatStarted"
-    useEffect(() => {
-        const resetChat = () => {
-            setConversation([]);
-            setInputValue('');
-        };
-
-        window.addEventListener('newChatStarted', resetChat);
-        return () => window.removeEventListener('newChatStarted', resetChat);
-    }, []);
-
     const handleSendMessage = async (message?: string) => {
         const userMessage = message ?? inputValue.trim();
         if (!userMessage) return;
@@ -43,13 +32,12 @@ export default function ChatContent({ userName = 'Handsome', isSidebarCollapsed 
         setIsLoading(true);
         setInputValue('');
 
-        // show user message
         setConversation((prev) => [...prev, { role: 'user', text: userMessage }]);
 
         try {
             const data = await sendChatWithResources({
                 message: userMessage,
-                session_id: localStorage.getItem('chat_session_id') || '',
+                session_id: localStorage.getItem('chat_session_id') || undefined,
                 level: 'public',
                 max_results: 5,
                 include_metadata: false,
@@ -122,6 +110,7 @@ export default function ChatContent({ userName = 'Handsome', isSidebarCollapsed 
                     className="flex-1 resize-none px-3 py-2 bg-transparent focus:outline-none text-sm"
                     onKeyDown={handleKeyDown}
                 />
+
                 <div className="mt-2 flex items-center justify-end">
                     <button type="submit" className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-50 text-black transition disabled:opacity-50" disabled={!inputValue.trim()}>
                         <IconArrowUp />
@@ -140,22 +129,12 @@ export default function ChatContent({ userName = 'Handsome', isSidebarCollapsed 
                 </linearGradient>
             </svg>
 
-            <div
-                className="absolute inset-0 overflow-y-auto px-6"
-                ref={chatContainerRef}
-                style={{
-                    top: '76px',
-                    bottom: '84px',
-                    paddingTop: '0px',
-                    paddingBottom: '0px',
-                }}
-            >
+            <div className="absolute inset-0 overflow-y-auto px-6" ref={chatContainerRef} style={{ top: '76px', bottom: '84px' }}>
                 {!hasMessages ? (
                     <div className="flex flex-col justify-center items-start h-full w-full max-w-3xl mx-auto px-6 sm:px-0">
                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="mb-6 w-full">
                             <h1 className="text-3xl sm:text-5xl font-semibold bg-gradient-to-r from-[#0046FF] to-[#FF3B3F] bg-clip-text text-transparent">
-                                Hi {userName},
-                                <br />
+                                Hi {userName},<br />
                                 What would you like to know?
                             </h1>
                         </motion.div>
@@ -209,7 +188,7 @@ export default function ChatContent({ userName = 'Handsome', isSidebarCollapsed 
                         {isLoading && (
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-start space-x-2 mt-2">
                                 <div className="px-4 py-2 rounded-md flex space-x-2">
-                                    <span className="w-2 h-2 rounded-full bg-gradient-to-r from-[#0046FF] to-[#FF3B3F] animate-pulse" style={{ animationDelay: '0ms' }} />
+                                    <span className="w-2 h-2 rounded-full bg-gradient-to-r from-[#0046FF] to-[#FF3B3F] animate-pulse" />
                                     <span className="w-2 h-2 rounded-full bg-gradient-to-r from-[#0046FF] to-[#FF3B3F] animate-pulse" style={{ animationDelay: '200ms' }} />
                                     <span className="w-2 h-2 rounded-full bg-gradient-to-r from-[#0046FF] to-[#FF3B3F] animate-pulse" style={{ animationDelay: '400ms' }} />
                                 </div>

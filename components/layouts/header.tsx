@@ -108,9 +108,15 @@ export default function Header({ isCollapsed, onToggleChat, activeItem }: Header
                     </Dropdown>
                 )}
 
-                <Tippy content="Turn on temporary chat" className="bg-gray-200 text-xs text-gray-600 rounded-md p-1" placement="bottom">
+                {/* <Tippy content="Turn on temporary chat" className="bg-gray-200 text-xs text-gray-600 rounded-md p-1" placement="bottom">
                     <button onClick={onToggleChat} className="p-2 rounded-md hover:bg-gray-100 transition-colors" aria-label="Turn off temporary chat">
                         <IconTempMessage className="h-5 w-5" />
+                    </button>
+                </Tippy> */}
+
+                <Tippy content="Turn on temporary chat" theme="white-light">
+                    <button className="block rounded-full bg-white-light/40 p-2 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60">
+                        <IconTempMessage className="w-4 h-4" />
                     </button>
                 </Tippy>
             </div>
