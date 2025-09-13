@@ -1,23 +1,74 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import IconTempMessage from '../icon/ai/icon-temp-message';
 import Tippy from '@tippyjs/react';
 import { ChevronDown } from 'lucide-react';
 import Dropdown from '../dropdown';
+import { usePersonalityContext } from '@/context/PersonalityContext';
 
 interface HeaderProps {
     isCollapsed: boolean;
     onToggleChat?: () => void;
-    activeItem: string; // sidebar active item passed down (Chat | Training | Personal)
+    activeItem: string; // Chat | Training | Personality
 }
 
 export default function Header({ isCollapsed, onToggleChat, activeItem }: HeaderProps) {
+    const { refreshExpertise } = usePersonalityContext();
     const [selectedOption, setSelectedOption] = useState<string | null>(null);
+    const [expertiseList, setExpertiseList] = useState<string[]>([]);
+    const [loading, setLoading] = useState(false);
 
-    const handleSelect = (option: string) => {
+    const handleSelect = async (option: string) => {
         setSelectedOption(option);
+
+        if (activeItem === 'Personality') {
+            try {
+                const encryptedKey = localStorage.getItem('x-encrypted-key');
+                if (!encryptedKey) throw new Error('Missing x-encrypted-key');
+
+                const response = await fetch('https://devapi02.awfatech.com/api/v1/llm/change-expertise', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-encrypted-key': encryptedKey,
+                    },
+                    body: JSON.stringify({ expertise: option.toLowerCase() }),
+                });
+
+                if (!response.ok) {
+                    const res = await response.json();
+                    throw new Error(res.message || 'Failed to change expertise');
+                }
+
+                // Refresh current expertise immediately
+                await refreshExpertise();
+            } catch (err) {
+                console.error('Error changing expertise:', err);
+            }
+        }
     };
+
+    useEffect(() => {
+        if (activeItem === 'Personality') {
+            setLoading(true);
+            fetch('https://devapi02.awfatech.com/api/v1/llm/expertise')
+                .then((res) => res.json())
+                .then((res) => {
+                    if (res.success && Array.isArray(res.data)) {
+                        setExpertiseList(res.data);
+                        setSelectedOption(res.data[0]);
+                    } else {
+                        setExpertiseList([]);
+                    }
+                })
+                .catch((err) => {
+                    console.error('Failed to fetch expertise:', err);
+                    setExpertiseList([]);
+                })
+                .finally(() => setLoading(false));
+        }
+    }, [activeItem]);
 
     return (
         <header
@@ -25,76 +76,38 @@ export default function Header({ isCollapsed, onToggleChat, activeItem }: Header
                 ${isCollapsed ? 'md:ml-16' : 'md:ml-64'}
             `}
         >
-            {/* Left: Title */}
             <h1 className="text-xl font-semibold text-gray-800">EbossAI</h1>
 
-            {/* Right side */}
             <div className="flex items-center gap-3 relative">
-                {/* ✅ Dropdown for Chat & Training */}
-                {(activeItem === 'Chat' || activeItem === 'Training') && (
-                    <Dropdown
-                        button={
-                            <div className="flex items-center gap-1 px-3 py-1.5 text-sm border rounded-md bg-white shadow-sm hover:bg-gray-50">
-                                <span className={selectedOption ? 'text-gray-800' : 'text-gray-400'}>{selectedOption || 'Select'}</span>
-                                <ChevronDown className="w-4 h-4" />
-                            </div>
-                        }
-                    >
-                        <div className="w-32 bg-white border rounded-md shadow-lg">
-                            <ul className="py-1 text-sm text-gray-700">
-                                <li>
-                                    <button onClick={() => handleSelect('Internal')} className="block w-full px-4 py-2 text-left hover:bg-gray-100">
-                                        Internal
-                                    </button>
-                                </li>
-                                <li>
-                                    <button onClick={() => handleSelect('Public')} className="block w-full px-4 py-2 text-left hover:bg-gray-100">
-                                        Public
-                                    </button>
-                                </li>
-                            </ul>
-                        </div>
-                    </Dropdown>
-                )}
-
-                {/* ✅ Different dropdown for Personal */}
                 {activeItem === 'Personality' && (
                     <Dropdown
                         button={
                             <div className="flex items-center gap-1 px-3 py-1.5 text-sm border rounded-md bg-white shadow-sm hover:bg-gray-50">
-                                <span className="text-gray-800">Personal</span>
+                                <span className="text-gray-800">{selectedOption || 'Select Expertise'}</span>
                                 <ChevronDown className="w-4 h-4" />
                             </div>
                         }
                     >
-                        <div className="w-40 bg-white border rounded-md shadow-lg">
+                        <div className="w-40 bg-white border rounded-md shadow-lg max-h-60 overflow-y-auto">
                             <ul className="py-1 text-sm text-gray-700">
-                                <li>
-                                    <button onClick={() => handleSelect('Profile')} className="block w-full px-4 py-2 text-left hover:bg-gray-100">
-                                        Maketer
-                                    </button>
-                                </li>
-                                <li>
-                                    <button onClick={() => handleSelect('Settings')} className="block w-full px-4 py-2 text-left hover:bg-gray-100">
-                                        CFO
-                                    </button>
-                                </li>
-                                <li>
-                                    <button onClick={() => handleSelect('Settings')} className="block w-full px-4 py-2 text-left hover:bg-gray-100">
-                                        IT
-                                    </button>
-                                </li>
-                                <li>
-                                    <button onClick={() => handleSelect('Settings')} className="block w-full px-4 py-2 text-left hover:bg-gray-100">
-                                        Biker
-                                    </button>
-                                </li>
+                                {loading ? (
+                                    <li className="px-4 py-2 text-gray-500">Loading...</li>
+                                ) : expertiseList.length ? (
+                                    expertiseList.map((item) => (
+                                        <li key={item}>
+                                            <button onClick={() => handleSelect(item)} className="block w-full px-4 py-2 text-left hover:bg-gray-100">
+                                                {item.charAt(0).toUpperCase() + item.slice(1)}
+                                            </button>
+                                        </li>
+                                    ))
+                                ) : (
+                                    <li className="px-4 py-2 text-gray-500">No data</li>
+                                )}
                             </ul>
                         </div>
                     </Dropdown>
                 )}
 
-                {/* Temp chat toggle */}
                 <Tippy content="Turn on temporary chat" className="bg-gray-200 text-xs text-gray-600 rounded-md p-1" placement="bottom">
                     <button onClick={onToggleChat} className="p-2 rounded-md hover:bg-gray-100 transition-colors" aria-label="Turn off temporary chat">
                         <IconTempMessage className="h-5 w-5" />
