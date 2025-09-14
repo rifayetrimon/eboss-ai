@@ -7,7 +7,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import IconArrowUp from '@/components/icon/ai/icon-uparrow';
 import PinIcon from '@/components/icon/ai/icon-pin';
-import { sendChatWithResources } from '@/services/ai/chatApi';
+import { sendChatWithResources, fetchChatSession } from '@/services/ai/chatApi';
 
 interface ChatContentProps {
     userName?: string;
@@ -21,17 +21,98 @@ export default function ChatContent({ userName = 'Handsome', isSidebarCollapsed 
     const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
     const [likedIndex, setLikedIndex] = useState<number | null>(null);
     const [dislikedIndex, setDislikedIndex] = useState<number | null>(null);
+    const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
     const inputRef = useRef<HTMLTextAreaElement | null>(null);
     const chatContainerRef = useRef<HTMLDivElement | null>(null);
 
-    // ✅ Reset chat when Sidebar triggers "newChatStarted"
+    // ✅ Load chat history from API if session exists
     useEffect(() => {
-        const resetChat = () => {
-            setConversation([]);
-            setInputValue('');
+        const loadConversation = async () => {
+            // First, try to load from localStorage as fallback
+            const savedConversation = localStorage.getItem('chat_conversation');
+            if (savedConversation) {
+                try {
+                    const parsedConversation = JSON.parse(savedConversation);
+                    if (Array.isArray(parsedConversation) && parsedConversation.length > 0) {
+                        setConversation(parsedConversation);
+                    }
+                } catch (err) {
+                    console.error('❌ Failed to parse saved conversation:', err);
+                }
+            }
+
+            // Then try to load from API
+            const savedSession = localStorage.getItem('session_id');
+            if (!savedSession) {
+                console.log('🔍 No session_id found in localStorage');
+                return;
+            }
+
+            console.log('🔍 Found session_id:', savedSession);
+            setIsLoadingHistory(true);
+
+            try {
+                const data = await fetchChatSession(savedSession);
+                console.log('🔍 Chat session API response:', data);
+
+                // Handle different possible response structures
+                let messages = [];
+                if (data?.data?.messages) {
+                    messages = data.data.messages;
+                } else if (data?.messages) {
+                    messages = data.messages;
+                } else if (Array.isArray(data?.data)) {
+                    messages = data.data;
+                }
+
+                console.log('🔍 Extracted messages:', messages);
+
+                if (messages.length > 0) {
+                    const formattedMessages = messages.map((msg: any) => {
+                        // Handle different message formats
+                        const role = msg.role === 'assistant' || msg.role === 'ai' || msg.role === 'gemini' ? 'gemini' : 'user';
+                        const text = msg.content || msg.text || msg.message || '';
+
+                        return {
+                            role,
+                            text,
+                        };
+                    });
+
+                    console.log('🔍 Formatted messages:', formattedMessages);
+                    setConversation(formattedMessages);
+                    localStorage.setItem('chat_conversation', JSON.stringify(formattedMessages));
+                } else {
+                    console.log('🔍 No messages found in API response');
+                }
+            } catch (err) {
+                console.error('❌ Failed to fetch chat session:', err);
+                // If API fails, keep the localStorage version if it exists
+            } finally {
+                setIsLoadingHistory(false);
+            }
         };
 
+        loadConversation();
+    }, []);
+
+    // ✅ Save conversation into localStorage whenever it changes
+    useEffect(() => {
+        if (conversation.length > 0) {
+            localStorage.setItem('chat_conversation', JSON.stringify(conversation));
+        }
+    }, [conversation]);
+
+    // ✅ Reset chat only when "newChatStarted" event fires
+    useEffect(() => {
+        const resetChat = () => {
+            console.log('🔄 Resetting chat...');
+            setConversation([]);
+            setInputValue('');
+            localStorage.removeItem('chat_conversation');
+            localStorage.removeItem('session_id');
+        };
         window.addEventListener('newChatStarted', resetChat);
         return () => window.removeEventListener('newChatStarted', resetChat);
     }, []);
@@ -43,31 +124,47 @@ export default function ChatContent({ userName = 'Handsome', isSidebarCollapsed 
         setIsLoading(true);
         setInputValue('');
 
-        // show user message
-        setConversation((prev) => [...prev, { role: 'user', text: userMessage }]);
+        // Show user message
+        const newUserMessage = { role: 'user', text: userMessage };
+        setConversation((prev) => [...prev, newUserMessage]);
 
         try {
+            // Use the correct key for session_id
+            const sessionId = localStorage.getItem('session_id') || '';
+            console.log('📤 Sending message with session_id:', sessionId);
+
             const data = await sendChatWithResources({
                 message: userMessage,
-                session_id: localStorage.getItem('chat_session_id') || '',
+                session_id: sessionId,
                 level: 'public',
                 max_results: 5,
                 include_metadata: false,
             });
 
-            setConversation((prev) => [
-                ...prev,
-                {
-                    role: 'gemini',
-                    text: data?.data?.response || data?.message || 'No response from AI.',
-                },
-            ]);
+            console.log('📨 Received response:', data);
+
+            // Append AI response
+            const aiResponse = {
+                role: 'gemini',
+                text: data?.data?.response || data?.response || data?.message || 'No response from AI.',
+            };
+
+            setConversation((prev) => [...prev, aiResponse]);
+
+            // ✅ Save session_id if API returns one
+            if (data?.data?.session_id) {
+                console.log('💾 Saving new session_id:', data.data.session_id);
+                localStorage.setItem('session_id', data.data.session_id);
+            }
         } catch (error: any) {
+            console.error('❌ Chat error:', error);
             let errorMessage = 'Sorry, something went wrong. Please try again.';
             if (error.message?.includes('Encrypted key missing')) {
                 errorMessage = '⚠️ Encrypted key missing. Please login again.';
             }
-            setConversation((prev) => [...prev, { role: 'gemini', text: errorMessage }]);
+
+            const errorResponse = { role: 'gemini', text: errorMessage };
+            setConversation((prev) => [...prev, errorResponse]);
         } finally {
             setIsLoading(false);
         }
@@ -96,9 +193,12 @@ export default function ChatContent({ userName = 'Handsome', isSidebarCollapsed 
         }
     };
 
+    // ✅ Auto-scroll to bottom but leave gap from input
     useEffect(() => {
         if (chatContainerRef.current) {
-            chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+            const container = chatContainerRef.current;
+            const targetScroll = container.scrollHeight - 20;
+            container.scrollTop = targetScroll > 0 ? targetScroll : 0;
         }
     }, [conversation]);
 
@@ -121,9 +221,14 @@ export default function ChatContent({ userName = 'Handsome', isSidebarCollapsed 
                     rows={2}
                     className="flex-1 resize-none px-3 py-2 bg-transparent focus:outline-none text-sm"
                     onKeyDown={handleKeyDown}
+                    disabled={isLoading}
                 />
                 <div className="mt-2 flex items-center justify-end">
-                    <button type="submit" className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-50 text-black transition disabled:opacity-50" disabled={!inputValue.trim()}>
+                    <button
+                        type="submit"
+                        className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-50 text-black transition disabled:opacity-50"
+                        disabled={!inputValue.trim() || isLoading}
+                    >
                         <IconArrowUp />
                     </button>
                 </div>
@@ -140,6 +245,7 @@ export default function ChatContent({ userName = 'Handsome', isSidebarCollapsed 
                 </linearGradient>
             </svg>
 
+            {/* Chat Area */}
             <div
                 className="absolute inset-0 overflow-y-auto px-6"
                 ref={chatContainerRef}
@@ -150,7 +256,19 @@ export default function ChatContent({ userName = 'Handsome', isSidebarCollapsed 
                     paddingBottom: '0px',
                 }}
             >
-                {!hasMessages ? (
+                {isLoadingHistory && (
+                    <div className="flex items-center justify-center h-32">
+                        <div className="flex space-x-2">
+                            <span className="w-2 h-2 rounded-full bg-gradient-to-r from-[#0046FF] to-[#FF3B3F] animate-pulse" style={{ animationDelay: '0ms' }} />
+                            <span className="w-2 h-2 rounded-full bg-gradient-to-r from-[#0046FF] to-[#FF3B3F] animate-pulse" style={{ animationDelay: '200ms' }} />
+                            <span className="w-2 h-2 rounded-full bg-gradient-to-r from-[#0046FF] to-[#FF3B3F] animate-pulse" style={{ animationDelay: '400ms' }} />
+                        </div>
+                        <span className="ml-3 text-sm text-gray-500">Loading chat history...</span>
+                    </div>
+                )}
+
+                {!hasMessages && !isLoadingHistory ? (
+                    // Empty state
                     <div className="flex flex-col justify-center items-start h-full w-full max-w-3xl mx-auto px-6 sm:px-0">
                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="mb-6 w-full">
                             <h1 className="text-3xl sm:text-5xl font-semibold bg-gradient-to-r from-[#0046FF] to-[#FF3B3F] bg-clip-text text-transparent">
@@ -163,7 +281,8 @@ export default function ChatContent({ userName = 'Handsome', isSidebarCollapsed 
                             {InputBox}
                         </motion.div>
                     </div>
-                ) : (
+                ) : hasMessages ? (
+                    // Conversation state
                     <div className="space-y-6 max-w-3xl mx-auto">
                         {conversation.map((message, index) => (
                             <motion.div key={index} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
@@ -216,7 +335,7 @@ export default function ChatContent({ userName = 'Handsome', isSidebarCollapsed 
                             </motion.div>
                         )}
                     </div>
-                )}
+                ) : null}
             </div>
 
             {/* Bottom input fixed bar */}

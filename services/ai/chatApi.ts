@@ -12,6 +12,15 @@ export const sendChatWithResources = async (payload: ChatRequest) => {
     const encryptedKey = localStorage.getItem('x-encrypted-key');
     if (!encryptedKey) throw new Error('Encrypted key missing');
 
+    // Restore session_id from localStorage if not provided
+    let sessionId = payload.session_id;
+    if (!sessionId) {
+        const storedSession = localStorage.getItem('session_id');
+        if (storedSession) {
+            sessionId = storedSession;
+        }
+    }
+
     const url = 'https://devapi02.awfatech.com/api/v1/llm/chat-with-resources';
 
     const options: RequestInit = {
@@ -22,7 +31,7 @@ export const sendChatWithResources = async (payload: ChatRequest) => {
         },
         body: JSON.stringify({
             message: payload.message,
-            session_id: payload.session_id,
+            session_id: sessionId ?? '',
             level: payload.level,
             max_results: payload.max_results ?? 5,
             include_metadata: payload.include_metadata ?? false,
@@ -37,10 +46,11 @@ export const sendChatWithResources = async (payload: ChatRequest) => {
     }
 
     const data = await response.json();
+    console.log('🔍 Full API response (chat-with-resources):', data);
 
-    // ✅ Store session_id for ongoing chat
-    if (data.session_id) {
-        localStorage.setItem('chat_session_id', data.session_id);
+    // ✅ Save session_id only if returned from backend
+    if (data.data?.session_id && data.data.session_id.trim() !== '') {
+        localStorage.setItem('session_id', data.data.session_id);
     }
 
     return data;
@@ -48,6 +58,7 @@ export const sendChatWithResources = async (payload: ChatRequest) => {
 
 // 🚀 For starting a new chat session (from Sidebar)
 export const startNewChatSession = async () => {
+    localStorage.removeItem('session_id'); // clear old session
     return sendChatWithResources({
         message: '',
         session_id: '',
@@ -55,4 +66,29 @@ export const startNewChatSession = async () => {
         max_results: 5,
         include_metadata: false,
     });
+};
+
+// 🚀 New function: Fetch previous chat messages for a given session
+export const fetchChatSession = async (sessionId: string) => {
+    const encryptedKey = localStorage.getItem('x-encrypted-key');
+    if (!encryptedKey) throw new Error('Encrypted key missing');
+
+    const url = `https://devapi02.awfatech.com/api/v1/llm/chat-sessions/${sessionId}`;
+
+    const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'x-encrypted-key': encryptedKey,
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData?.message || 'Failed to fetch chat session');
+    }
+
+    const data = await response.json();
+    console.log('📜 Full API response (chat-sessions):', data);
+    return data;
 };
