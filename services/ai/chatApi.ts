@@ -1,4 +1,5 @@
 // services/ai/chatApi.ts
+import { fetchChatSessions } from './sidebar';
 
 interface ChatRequest {
     message: string;
@@ -51,6 +52,14 @@ export const sendChatWithResources = async (payload: ChatRequest) => {
     // ✅ Save session_id only if returned from backend
     if (data.data?.session_id && data.data.session_id.trim() !== '') {
         localStorage.setItem('session_id', data.data.session_id);
+
+        // 🚀 Immediately refresh sidebar history after first session is created
+        try {
+            const updatedSessions = await fetchChatSessions();
+            window.dispatchEvent(new CustomEvent('chatSessionsUpdated', { detail: updatedSessions }));
+        } catch (err) {
+            console.error('⚠️ Failed to refresh chat sessions after new message:', err);
+        }
     }
 
     return data;
@@ -68,7 +77,7 @@ export const startNewChatSession = async () => {
     });
 };
 
-// 🚀 New function: Fetch previous chat messages for a given session
+// 🚀 Fetch previous chat messages for a given session
 export const fetchChatSession = async (sessionId: string) => {
     const encryptedKey = localStorage.getItem('x-encrypted-key');
     if (!encryptedKey) throw new Error('Encrypted key missing');

@@ -47,6 +47,20 @@ export default function Sidebar({ onCollapseChange, activeItem, setActiveItem }:
         loadSessions();
     }, []);
 
+    // ✅ Listen for chatSessionsUpdated events
+    useEffect(() => {
+        const handleSessionsUpdate = (e: Event) => {
+            const customEvent = e as CustomEvent<ChatSession[]>;
+            setSessions(customEvent.detail);
+        };
+
+        window.addEventListener('chatSessionsUpdated', handleSessionsUpdate);
+
+        return () => {
+            window.removeEventListener('chatSessionsUpdated', handleSessionsUpdate);
+        };
+    }, []);
+
     // ✅ Start new chat
     async function startNewChat() {
         try {
@@ -196,7 +210,6 @@ export default function Sidebar({ onCollapseChange, activeItem, setActiveItem }:
                         </div>
                     </div>
 
-                    {/* Divider before Bottom - only when expanded */}
                     {!isCollapsed && <div className="my-2 border-t border-gray-200"></div>}
                 </div>
 
