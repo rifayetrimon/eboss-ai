@@ -11,7 +11,8 @@ import IconSidebar from '../icon/ai/icon-sidebar';
 import TwoBarMenuIcon from '../icon/ai/icon-twobar';
 import IconAiLogo from '../icon/ai/icon-ai-logo';
 import { motion, AnimatePresence } from 'framer-motion';
-import { startNewChatSession } from '@/services/ai/chatApi'; // ✅ import service
+import { startNewChatSession } from '@/services/ai/chatApi';
+import { fetchChatSessions, ChatSession } from '@/services/ai/sidebar';
 
 interface SidebarProps {
     onCollapseChange: (collapsed: boolean) => void;
@@ -26,18 +27,36 @@ export default function Sidebar({ onCollapseChange, activeItem, setActiveItem }:
     const { data } = useProfile();
     const sidebarRef = useRef<HTMLDivElement>(null);
 
-    // ✅ Proper startNewChat using chatApi.ts
+    // ✅ Chat sessions state
+    const [sessions, setSessions] = useState<ChatSession[]>([]);
+    const [loading, setLoading] = useState(false);
+
+    // ✅ Load sessions on mount
+    useEffect(() => {
+        const loadSessions = async () => {
+            try {
+                setLoading(true);
+                const list = await fetchChatSessions();
+                setSessions(list);
+            } catch (err) {
+                console.error('❌ Failed to fetch chat sessions:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadSessions();
+    }, []);
+
+    // ✅ Start new chat
     async function startNewChat() {
         try {
             const response = await startNewChatSession();
-
             console.log('✅ New chat response:', response);
 
             if (response?.session_id) {
                 localStorage.setItem('chat_session_id', response.session_id);
             }
 
-            // Fire event so ChatContent can reset & show welcome message
             window.dispatchEvent(
                 new CustomEvent('newChatStarted', {
                     detail: { response: response?.response || '' },
@@ -48,7 +67,6 @@ export default function Sidebar({ onCollapseChange, activeItem, setActiveItem }:
         }
     }
 
-    // base nav items (without NewChat)
     const navigationItems = [
         { id: 'Personality', icon: IconAdd, label: 'Personality' },
         { id: 'Chat', icon: Home, label: 'Chat' },
@@ -69,11 +87,8 @@ export default function Sidebar({ onCollapseChange, activeItem, setActiveItem }:
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [mobileOpen]);
 
-    // helper to render nav buttons
     const renderNavButtons = (isMobile = false) => {
         const itemsToRender = [...navigationItems];
-
-        // add NewChat dynamically when Chat is active
         if (activeItem === 'Chat') {
             itemsToRender.splice(itemsToRender.findIndex((i) => i.id === 'Chat') + 1, 0, {
                 id: 'NewChat',
@@ -101,12 +116,11 @@ export default function Sidebar({ onCollapseChange, activeItem, setActiveItem }:
                         ${!isMobile && isCollapsed ? 'justify-center' : 'justify-start'}`}
                     onClick={() => {
                         if (item.id === 'NewChat') {
-                            startNewChat(); // ✅ Call API
-                            setActiveItem('Chat'); // keep Chat active
+                            startNewChat();
+                            setActiveItem('Chat');
                         } else {
                             setActiveItem(item.id);
                         }
-
                         if (isMobile) setMobileOpen(false);
                     }}
                     title={!isMobile && isCollapsed ? item.label : undefined}
@@ -126,9 +140,7 @@ export default function Sidebar({ onCollapseChange, activeItem, setActiveItem }:
 
     return (
         <>
-            {/* --- mobile + desktop sidebar code stays unchanged --- */}
-            {/* (I kept all your design, only swapped startNewChat impl) */}
-            {/* ... */}
+            {/* --- Desktop Sidebar --- */}
             <motion.div animate={{ width: isCollapsed ? 64 : 256 }} transition={{ duration: 0.4 }} className="hidden md:flex flex-col h-screen bg-white border-r border-gray-200 overflow-hidden">
                 {/* Header */}
                 <div className="flex items-center justify-between h-14 px-4">
@@ -149,11 +161,91 @@ export default function Sidebar({ onCollapseChange, activeItem, setActiveItem }:
                     )}
                 </div>
 
-                {/* Navigation */}
-                <div className="flex-1 px-2 pt-2 space-y-0.5">{renderNavButtons(false)}</div>
+                {/* History Section */}
+                <div className="flex-1 flex flex-col overflow-hidden">
+                    {/* Top nav */}
+                    <div className="px-2 pt-2 space-y-0.5">
+                        {renderNavButtons(false)}
+                        {/* Divider after Training - only when expanded */}
+                        {!isCollapsed && <div className="my-2 border-t border-gray-200"></div>}
+                    </div>
 
-                {/* Bottom section remains same */}
+                    {/* Scrollable History */}
+                    <div className="flex-1 overflow-y-auto px-2">
+                        {!isCollapsed && (
+                            <div
+                                className="sticky top-0 z-10 bg-white px-2 pt-3 pb-2 
+                      text-xs font-semibold text-gray-500 uppercase"
+                            >
+                                History
+                            </div>
+                        )}
+
+                        <div className="space-y-1 mt-1">
+                            {loading && <p className="text-sm text-gray-400 px-3">Loading...</p>}
+                            {!loading && sessions.length === 0 && <p className="text-sm text-gray-400 px-3">No history found</p>}
+                            {sessions.map((session) => (
+                                <button
+                                    key={session._id}
+                                    className={`w-full flex items-center h-9 px-3 rounded-md text-gray-700 
+            hover:bg-gray-100 transition ${isCollapsed ? 'justify-center' : 'justify-start'}`}
+                                >
+                                    {!isCollapsed && <span className="truncate leading-tight">{session.title || 'Untitled Chat'}</span>}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Divider before Bottom - only when expanded */}
+                    {!isCollapsed && <div className="my-2 border-t border-gray-200"></div>}
+                </div>
+
+                {/* Bottom */}
+                <div className="p-2 space-y-1">
+                    {/* Settings */}
+                    <button
+                        className={`w-full flex items-center gap-3 h-10 px-3 rounded-md hover:bg-gray-100 ${isCollapsed ? 'justify-center' : 'justify-start'}`}
+                        onClick={() => setActiveItem('Settings')}
+                        title={isCollapsed ? 'Settings' : undefined}
+                    >
+                        <IconSettings className="h-4 w-4" />
+                        <AnimatePresence>
+                            {!isCollapsed && (
+                                <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                                    Settings
+                                </motion.span>
+                            )}
+                        </AnimatePresence>
+                    </button>
+
+                    {/* Profile */}
+                    <button
+                        className={`w-full flex items-center gap-3 h-10 px-3 rounded-md hover:bg-gray-100 ${isCollapsed ? 'justify-center' : 'justify-start'}`}
+                        onClick={() => setActiveItem('Profile')}
+                        title={isCollapsed ? 'Profile' : undefined}
+                    >
+                        <Image
+                            src={data?.personal?.file_profile_url || '/assets/images/user-profile.jpeg'}
+                            alt="Profile picture"
+                            width={32}
+                            height={32}
+                            className="h-8 w-8 rounded-full object-cover flex-shrink-0"
+                        />
+                        <AnimatePresence>
+                            {!isCollapsed && (
+                                <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                                    Profile
+                                </motion.span>
+                            )}
+                        </AnimatePresence>
+                    </button>
+                </div>
             </motion.div>
+
+            {/* --- Mobile Trigger Button --- */}
+            <button className="md:hidden fixed top-4 left-4 z-50 bg-white p-2 rounded-md shadow hover:bg-gray-100" onClick={() => setMobileOpen(true)} aria-label="Open menu">
+                <TwoBarMenuIcon className="w-5 h-5 text-gray-700" />
+            </button>
         </>
     );
 }
