@@ -1,125 +1,209 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import IconTempMessage from '../icon/ai/icon-temp-message';
-import Tippy from '@tippyjs/react';
 import { ChevronDown } from 'lucide-react';
 import Dropdown from '../dropdown';
 import { usePersonalityContext } from '@/context/PersonalityContext';
 
 interface HeaderProps {
     isCollapsed: boolean;
-    onToggleChat?: () => void;
     activeItem: string; // Chat | Training | Personality
 }
 
-export default function Header({ isCollapsed, onToggleChat, activeItem }: HeaderProps) {
+export default function Header({ isCollapsed, activeItem }: HeaderProps) {
     const { refreshExpertise } = usePersonalityContext();
     const [selectedOption, setSelectedOption] = useState<string | null>(null);
+    const [selectedTrainingType, setSelectedTrainingType] = useState<string>('Internal');
     const [expertiseList, setExpertiseList] = useState<string[]>([]);
+    const [trainingList, setTrainingList] = useState<string[]>([]);
+    const [categoryList, setCategoryList] = useState<{ value: string; display_name: string }[]>([]);
+    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
 
-    const handleSelect = async (option: string) => {
-        setSelectedOption(option);
+    const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
 
-        if (activeItem === 'Personality') {
-            try {
-                const encryptedKey = localStorage.getItem('x-encrypted-key');
-                if (!encryptedKey) throw new Error('Missing x-encrypted-key');
-
-                const response = await fetch('https://devapi02.awfatech.com/api/v1/llm/change-expertise', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'x-encrypted-key': encryptedKey,
-                    },
-                    body: JSON.stringify({ expertise: option.toLowerCase() }),
-                });
-
-                if (!response.ok) {
-                    const res = await response.json();
-                    throw new Error(res.message || 'Failed to change expertise');
-                }
-
-                // Refresh current expertise immediately
-                await refreshExpertise();
-            } catch (err) {
-                console.error('Error changing expertise:', err);
-            }
-        }
+    const handleTrainingTypeSelect = (type: string) => {
+        setSelectedTrainingType(type);
     };
 
     useEffect(() => {
-        if (activeItem === 'Personality') {
+        const fetchExpertise = async () => {
+            if (activeItem !== 'Personality') return;
             setLoading(true);
-            fetch('https://devapi02.awfatech.com/api/v1/llm/expertise')
-                .then((res) => res.json())
-                .then((res) => {
-                    if (res.success && Array.isArray(res.data)) {
-                        setExpertiseList(res.data);
-                        setSelectedOption(res.data[0]);
-                    } else {
-                        setExpertiseList([]);
-                    }
-                })
-                .catch((err) => {
-                    console.error('Failed to fetch expertise:', err);
+            try {
+                const res = await fetch('https://devapi02.awfatech.com/api/v1/llm/expertise');
+                const data = await res.json();
+                if (data.success && Array.isArray(data.data)) {
+                    setExpertiseList(data.data);
+                    setSelectedOption(capitalize(data.data[0])); // default
+                } else {
                     setExpertiseList([]);
-                })
-                .finally(() => setLoading(false));
+                }
+            } catch (err) {
+                console.error(err);
+                setExpertiseList([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        const fetchTraining = async () => {
+            if (activeItem !== 'Training') return;
+            setLoading(true);
+            try {
+                // Fetch training list
+                const res = await fetch('https://devapi02.awfatech.com/api/v1/llm/training-list');
+                const data = await res.json();
+                if (data.success && Array.isArray(data.data)) {
+                    setTrainingList(data.data);
+                    setSelectedOption(capitalize(data.data[0]));
+                } else {
+                    setTrainingList([]);
+                }
+
+                // Fetch categories for 2nd dropdown
+                const catRes = await fetch('https://devapi02.awfatech.com/api/v1/llm/categories');
+                const catData = await catRes.json();
+                if (catData.success && Array.isArray(catData.data)) {
+                    setCategoryList(catData.data);
+                    setSelectedCategory(catData.data[0].display_name); // default first category
+                } else {
+                    setCategoryList([]);
+                }
+            } catch (err) {
+                console.error(err);
+                setTrainingList([]);
+                setCategoryList([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (activeItem === 'Chat') {
+            setSelectedOption('Internal'); // default for Chat
         }
+
+        fetchExpertise();
+        fetchTraining();
     }, [activeItem]);
 
-    return (
-        <header
-            className={`fixed top-0 left-0 right-0 h-14 flex items-center justify-between px-6 z-20 bg-white shadow-sm transition-all duration-300
-                ${isCollapsed ? 'md:ml-16' : 'md:ml-64'}
-            `}
-        >
-            <h1 className="text-xl font-semibold text-gray-800">EbossAI</h1>
+    const renderDropdown = () => {
+        if (activeItem === 'Personality') {
+            return (
+                <Dropdown
+                    button={
+                        <div className="flex items-center gap-1 px-3 py-1.5 text-sm border rounded-md bg-white shadow-sm hover:bg-gray-50">
+                            <span>{selectedOption || 'Select Expertise'}</span>
+                            <ChevronDown className="w-4 h-4" />
+                        </div>
+                    }
+                >
+                    <ul className="w-40 bg-white border rounded-md shadow-lg max-h-60 overflow-y-auto py-1 text-sm text-gray-700">
+                        {loading ? (
+                            <li className="px-4 py-2 text-gray-500">Loading...</li>
+                        ) : expertiseList.length ? (
+                            expertiseList.map((item) => (
+                                <li key={item}>
+                                    <button onClick={() => setSelectedOption(capitalize(item))} className="block w-full px-4 py-2 text-left hover:bg-gray-100">
+                                        {capitalize(item)}
+                                    </button>
+                                </li>
+                            ))
+                        ) : (
+                            <li className="px-4 py-2 text-gray-500">No data</li>
+                        )}
+                    </ul>
+                </Dropdown>
+            );
+        }
 
-            <div className="flex items-center gap-3 relative">
-                {activeItem === 'Personality' && (
+        if (activeItem === 'Chat') {
+            const chatOptions = ['Internal', 'Public'];
+            return (
+                <Dropdown
+                    button={
+                        <div className="flex items-center gap-1 px-3 py-1.5 text-sm border rounded-md bg-white shadow-sm hover:bg-gray-50">
+                            <span>{selectedOption || 'Select Chat Type'}</span>
+                            <ChevronDown className="w-4 h-4" />
+                        </div>
+                    }
+                >
+                    <ul className="w-40 bg-white border rounded-md shadow-lg py-1 text-sm text-gray-700">
+                        {chatOptions.map((item) => (
+                            <li key={item}>
+                                <button onClick={() => setSelectedOption(item)} className="block w-full px-4 py-2 text-left hover:bg-gray-100">
+                                    {item}
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                </Dropdown>
+            );
+        }
+
+        if (activeItem === 'Training') {
+            const trainingStaticOptions = ['Internal', 'Public'];
+            return (
+                <div className="flex gap-2">
+                    {/* First dropdown - training type */}
                     <Dropdown
                         button={
                             <div className="flex items-center gap-1 px-3 py-1.5 text-sm border rounded-md bg-white shadow-sm hover:bg-gray-50">
-                                <span className="text-gray-800">{selectedOption || 'Select Expertise'}</span>
+                                <span>{selectedTrainingType}</span>
                                 <ChevronDown className="w-4 h-4" />
                             </div>
                         }
                     >
-                        <div className="w-40 bg-white border rounded-md shadow-lg max-h-60 overflow-y-auto">
-                            <ul className="py-1 text-sm text-gray-700">
-                                {loading ? (
-                                    <li className="px-4 py-2 text-gray-500">Loading...</li>
-                                ) : expertiseList.length ? (
-                                    expertiseList.map((item) => (
-                                        <li key={item}>
-                                            <button onClick={() => handleSelect(item)} className="block w-full px-4 py-2 text-left hover:bg-gray-100">
-                                                {item.charAt(0).toUpperCase() + item.slice(1)}
-                                            </button>
-                                        </li>
-                                    ))
-                                ) : (
-                                    <li className="px-4 py-2 text-gray-500">No data</li>
-                                )}
-                            </ul>
-                        </div>
+                        <ul className="w-40 bg-white border rounded-md shadow-lg py-1 text-sm text-gray-700">
+                            {trainingStaticOptions.map((item) => (
+                                <li key={item}>
+                                    <button onClick={() => handleTrainingTypeSelect(item)} className="block w-full px-4 py-2 text-left hover:bg-gray-100">
+                                        {item}
+                                    </button>
+                                </li>
+                            ))}
+                        </ul>
                     </Dropdown>
-                )}
 
-                {/* <Tippy content="Turn on temporary chat" className="bg-gray-200 text-xs text-gray-600 rounded-md p-1" placement="bottom">
-                    <button onClick={onToggleChat} className="p-2 rounded-md hover:bg-gray-100 transition-colors" aria-label="Turn off temporary chat">
-                        <IconTempMessage className="h-5 w-5" />
-                    </button>
-                </Tippy> */}
+                    {/* Second dropdown - categories */}
+                    <Dropdown
+                        button={
+                            <div className="flex items-center gap-1 px-3 py-1.5 text-sm border rounded-md bg-white shadow-sm hover:bg-gray-50">
+                                <span>{selectedCategory || 'Select Category'}</span>
+                                <ChevronDown className="w-4 h-4" />
+                            </div>
+                        }
+                    >
+                        <ul className="w-56 bg-white border rounded-md shadow-lg max-h-60 overflow-y-auto py-1 text-sm text-gray-700">
+                            {loading ? (
+                                <li className="px-4 py-2 text-gray-500">Loading...</li>
+                            ) : categoryList.length ? (
+                                categoryList.map((item) => (
+                                    <li key={item.value}>
+                                        <button onClick={() => setSelectedCategory(item.display_name)} className="block w-full px-4 py-2 text-left hover:bg-gray-100">
+                                            {item.display_name}
+                                        </button>
+                                    </li>
+                                ))
+                            ) : (
+                                <li className="px-4 py-2 text-gray-500">No categories</li>
+                            )}
+                        </ul>
+                    </Dropdown>
+                </div>
+            );
+        }
 
-                <Tippy content="Turn on temporary chat" theme="white-light">
-                    <button className="block rounded-full bg-white-light/40 p-2 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60">
-                        <IconTempMessage className="w-4 h-4" />
-                    </button>
-                </Tippy>
-            </div>
+        return null;
+    };
+
+    return (
+        <header
+            className={`fixed top-0 left-0 right-0 h-14 flex items-center justify-between px-6 z-20 bg-white shadow-sm transition-all duration-300
+        ${isCollapsed ? 'md:ml-16' : 'md:ml-64'}`}
+        >
+            <h1 className="text-xl font-semibold text-gray-800">EbossAI</h1>
+            <div className="flex items-center gap-3 relative">{renderDropdown()}</div>
         </header>
     );
 }

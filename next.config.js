@@ -8,7 +8,7 @@ module.exports = {
     basePath: isProd ? '/eboss-ai-chat' : '',
     assetPrefix: isProd ? '/eboss-ai-chat' : '',
     images: {
-        domains: ['devapi02.awfatech.com'],
+        domains: ['devsec.awfatech.com', 'devapi02.awfatech.com'],
     },
     env: {
         NEXT_PUBLIC_BASE_PATH: isProd ? '/eboss-ai-chat' : '',

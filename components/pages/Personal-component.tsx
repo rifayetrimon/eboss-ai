@@ -3,11 +3,17 @@
 import { motion } from 'framer-motion';
 import { usePersonalityContext } from '@/context/PersonalityContext';
 import Image from 'next/image';
+import Loading from '../layouts/loading';
 
 export default function PersonalContent() {
     const { currentExpertiseData: data } = usePersonalityContext();
 
-    if (!data) return <div className="p-10">Loading...</div>;
+    if (!data)
+        return (
+            <div className="p-10">
+                <Loading />
+            </div>
+        );
 
     return (
         <div className="relative min-h-screen w-full bg-gradient-to-br from-indigo-100 via-pink-100 to-purple-200 dark:from-gray-900 dark:via-gray-800 dark:to-indigo-900">
