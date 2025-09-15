@@ -236,6 +236,56 @@ export default function ChatContent({ userName = 'Handsome', isSidebarCollapsed 
         </form>
     );
 
+    // ✅ Listen when user selects a session from sidebar
+    useEffect(() => {
+        const handleSessionSelect = async (e: Event) => {
+            const customEvent = e as CustomEvent<string>;
+            const selectedSessionId = customEvent.detail;
+            if (!selectedSessionId) return;
+
+            console.log('📌 Switching to session:', selectedSessionId);
+
+            // Save new session_id
+            localStorage.setItem('session_id', selectedSessionId);
+
+            // Reset conversation before loading new one
+            setConversation([]);
+            setIsLoadingHistory(true);
+
+            try {
+                const data = await fetchChatSession(selectedSessionId);
+                console.log('📨 Fetched chat session:', data);
+
+                let formatted: { role: string; text: string }[] = [];
+
+                if (Array.isArray(data?.messages)) {
+                    formatted = data.messages;
+                } else if (Array.isArray(data?.data?.conversations)) {
+                    formatted = data.data.conversations.flatMap((pair: string[]) => [
+                        { role: 'user', text: pair[0] },
+                        { role: 'gemini', text: pair[1] },
+                    ]);
+                }
+
+                console.log('✅ Formatted messages:', formatted);
+                setConversation(formatted);
+                localStorage.setItem('chat_conversation', JSON.stringify(formatted));
+
+                console.log('✅ Formatted messages:', formatted);
+
+                setConversation(formatted);
+                localStorage.setItem('chat_conversation', JSON.stringify(formatted));
+            } catch (err) {
+                console.error('❌ Failed to fetch chat session:', err);
+            } finally {
+                setIsLoadingHistory(false);
+            }
+        };
+
+        window.addEventListener('chatSessionSelected', handleSessionSelect);
+        return () => window.removeEventListener('chatSessionSelected', handleSessionSelect);
+    }, []);
+
     return (
         <>
             <svg width="0" height="0">
