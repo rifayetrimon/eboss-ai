@@ -1,4 +1,5 @@
 // services/ai/chatApi.ts
+import { fetchChatSessions } from './sidebar';
 
 interface ChatRequest {
     message: string;
@@ -50,7 +51,17 @@ export const sendChatWithResources = async (payload: ChatRequest) => {
 
     // ✅ Save session_id only if returned from backend
     if (data.data?.session_id && data.data.session_id.trim() !== '') {
-        localStorage.setItem('session_id', data.data.session_id);
+        const newSessionId = data.data.session_id;
+        localStorage.setItem('session_id', newSessionId);
+
+        // 🚀 Immediately refresh history list after new session is created
+        try {
+            const updatedSessions = await fetchChatSessions();
+            window.dispatchEvent(new CustomEvent('chatSessionsUpdated', { detail: updatedSessions }));
+            console.log('✅ History updated after new chat');
+        } catch (err) {
+            console.error('⚠️ Failed to refresh chat history:', err);
+        }
     }
 
     return data;
