@@ -236,56 +236,6 @@ export default function ChatContent({ userName = 'Handsome', isSidebarCollapsed 
         </form>
     );
 
-    // ✅ Listen when user selects a session from sidebar
-    useEffect(() => {
-        const handleSessionSelect = async (e: Event) => {
-            const customEvent = e as CustomEvent<string>;
-            const selectedSessionId = customEvent.detail;
-            if (!selectedSessionId) return;
-
-            console.log('📌 Switching to session:', selectedSessionId);
-
-            // Save new session_id
-            localStorage.setItem('session_id', selectedSessionId);
-
-            // Reset conversation before loading new one
-            setConversation([]);
-            setIsLoadingHistory(true);
-
-            try {
-                const data = await fetchChatSession(selectedSessionId);
-                console.log('📨 Fetched chat session:', data);
-
-                let formatted: { role: string; text: string }[] = [];
-
-                if (Array.isArray(data?.messages)) {
-                    formatted = data.messages;
-                } else if (Array.isArray(data?.data?.conversations)) {
-                    formatted = data.data.conversations.flatMap((pair: string[]) => [
-                        { role: 'user', text: pair[0] },
-                        { role: 'gemini', text: pair[1] },
-                    ]);
-                }
-
-                console.log('✅ Formatted messages:', formatted);
-                setConversation(formatted);
-                localStorage.setItem('chat_conversation', JSON.stringify(formatted));
-
-                console.log('✅ Formatted messages:', formatted);
-
-                setConversation(formatted);
-                localStorage.setItem('chat_conversation', JSON.stringify(formatted));
-            } catch (err) {
-                console.error('❌ Failed to fetch chat session:', err);
-            } finally {
-                setIsLoadingHistory(false);
-            }
-        };
-
-        window.addEventListener('chatSessionSelected', handleSessionSelect);
-        return () => window.removeEventListener('chatSessionSelected', handleSessionSelect);
-    }, []);
-
     return (
         <>
             <svg width="0" height="0">
@@ -300,10 +250,10 @@ export default function ChatContent({ userName = 'Handsome', isSidebarCollapsed 
                 className="absolute inset-0 overflow-y-auto px-6"
                 ref={chatContainerRef}
                 style={{
-                    top: '76px',
-                    bottom: '84px',
-                    paddingTop: '0px',
-                    paddingBottom: '0px',
+                    top: '74px',
+                    bottom: '104px', // 84px input height + 20px gap
+                    paddingTop: '30px',
+                    paddingBottom: '20px', // Add padding bottom for extra spacing
                 }}
             >
                 {isLoadingHistory && (
@@ -333,7 +283,7 @@ export default function ChatContent({ userName = 'Handsome', isSidebarCollapsed 
                     </div>
                 ) : hasMessages ? (
                     // Conversation state
-                    <div className="space-y-6 max-w-3xl mx-auto">
+                    <div className="space-y-6 max-w-3xl mx-auto pb-5">
                         {conversation.map((message, index) => (
                             <motion.div key={index} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
                                 <div className={`${message.role === 'user' ? 'text-right' : 'text-left'}`}>
