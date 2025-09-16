@@ -8,29 +8,10 @@ import { getTrainingHistory, uploadTrainingFile } from '@/services/ai/training';
 import Loading from '../layouts/loading';
 
 // -------------------- TrainingHistory Component --------------------
-function TrainingHistory({ setIsOpen }: { setIsOpen: (v: boolean) => void }) {
-    const [history, setHistory] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
-    useEffect(() => {
-        (async () => {
-            try {
-                const key = localStorage.getItem('x-encrypted-key');
-                const res = await getTrainingHistory(key);
-                setHistory(res.data || []);
-            } catch (err) {
-                console.error('Error fetching history:', err);
-                setError('Failed to load training history.');
-            } finally {
-                setLoading(false);
-            }
-        })();
-    }, []);
-
+function TrainingHistory({ setIsOpen, history, loading, error }: { setIsOpen: (v: boolean) => void; history: any[]; loading: boolean; error: string | null }) {
     return (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="relative z-0 flex flex-col h-screen px-6 pt-14 pb-6">
-            {/* Header */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="relative z-0 flex flex-col h-full px-6 pt-14 pb-6">
+            {/* Header (fixed, no scroll) */}
             <div className="flex items-center justify-between mb-6 shrink-0">
                 <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">Training History</h2>
                 <button onClick={() => setIsOpen(true)} className="px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition">
@@ -38,7 +19,7 @@ function TrainingHistory({ setIsOpen }: { setIsOpen: (v: boolean) => void }) {
                 </button>
             </div>
 
-            {/* History List */}
+            {/* History List (only this scrolls) */}
             <div className="flex-1 overflow-y-auto pr-2 space-y-6">
                 {loading ? (
                     <Loading />
@@ -48,7 +29,7 @@ function TrainingHistory({ setIsOpen }: { setIsOpen: (v: boolean) => void }) {
                     history.map((item) => (
                         <div
                             key={item._id}
-                            className="flex flex-col justify-between bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700 hover:shadow-xl transition"
+                            className="flex flex-col justify-between bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition"
                         >
                             <div>
                                 <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 truncate">{item.filename}</h3>
@@ -81,9 +62,15 @@ export default function TrainingPage() {
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
 
+    // History state (lifted up)
+    const [history, setHistory] = useState<any[]>([]);
+    const [loadingHistory, setLoadingHistory] = useState(true);
+    const [errorHistory, setErrorHistory] = useState<string | null>(null);
+
     const modalRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // Fetch categories
     useEffect(() => {
         const fetchCategories = async () => {
             setLoading(true);
@@ -101,6 +88,25 @@ export default function TrainingPage() {
             }
         };
         fetchCategories();
+    }, []);
+
+    // Fetch training history
+    const fetchHistory = async () => {
+        try {
+            setLoadingHistory(true);
+            const key = localStorage.getItem('x-encrypted-key');
+            const res = await getTrainingHistory(key);
+            setHistory(res.data || []);
+        } catch (err) {
+            console.error('Error fetching history:', err);
+            setErrorHistory('Failed to load training history.');
+        } finally {
+            setLoadingHistory(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchHistory();
     }, []);
 
     // Close modal when clicking outside
@@ -121,7 +127,7 @@ export default function TrainingPage() {
     return (
         <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
             {/* Training history */}
-            <TrainingHistory setIsOpen={setIsOpen} />
+            <TrainingHistory setIsOpen={setIsOpen} history={history} loading={loadingHistory} error={errorHistory} />
 
             {/* Modal */}
             {isOpen && (
@@ -136,7 +142,7 @@ export default function TrainingPage() {
 
                         {/* Dropdowns */}
                         <div className="mt-6 flex gap-3">
-                            {/* Level Dropdown (Internal/Public) */}
+                            {/* Level Dropdown */}
                             <Dropdown
                                 button={
                                     <div className="flex items-center gap-1 px-3 py-2 text-sm border rounded-md bg-white shadow-sm hover:bg-gray-50">
@@ -229,6 +235,10 @@ export default function TrainingPage() {
                                         }
 
                                         await uploadTrainingFile(file, key, selectedCategory, selectedTrainingType);
+
+                                        // ✅ Refresh history immediately
+                                        await fetchHistory();
+
                                         alert('File uploaded successfully!');
                                         setIsOpen(false);
                                         setFile(null);
