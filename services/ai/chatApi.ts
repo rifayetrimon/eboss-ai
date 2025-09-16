@@ -22,6 +22,9 @@ export const sendChatWithResources = async (payload: ChatRequest) => {
         }
     }
 
+    // ✅ Restore chat level if not passed
+    let chatLevel = payload.level || localStorage.getItem('chat_level') || 'internal';
+
     const url = 'https://devapi02.awfatech.com/api/v1/llm/chat-with-resources';
 
     const options: RequestInit = {
@@ -33,38 +36,16 @@ export const sendChatWithResources = async (payload: ChatRequest) => {
         body: JSON.stringify({
             message: payload.message,
             session_id: sessionId ?? '',
-            level: payload.level,
+            level: chatLevel, // 🔑 Pass dropdown value here
             max_results: payload.max_results ?? 5,
             include_metadata: payload.include_metadata ?? false,
         }),
     };
 
-    const response = await fetch(url, options);
+    const res = await fetch(url, options);
+    if (!res.ok) throw new Error(`API Error: ${res.statusText}`);
 
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData?.message || 'Request failed');
-    }
-
-    const data = await response.json();
-    console.log('🔍 Full API response (chat-with-resources):', data);
-
-    // ✅ Save session_id only if returned from backend
-    if (data.data?.session_id && data.data.session_id.trim() !== '') {
-        const newSessionId = data.data.session_id;
-        localStorage.setItem('session_id', newSessionId);
-
-        // 🚀 Immediately refresh history list after new session is created
-        try {
-            const updatedSessions = await fetchChatSessions();
-            window.dispatchEvent(new CustomEvent('chatSessionsUpdated', { detail: updatedSessions }));
-            console.log('✅ History updated after new chat');
-        } catch (err) {
-            console.error('⚠️ Failed to refresh chat history:', err);
-        }
-    }
-
-    return data;
+    return res.json();
 };
 
 // 🚀 For starting a new chat session (from Sidebar)

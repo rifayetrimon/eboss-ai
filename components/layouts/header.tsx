@@ -129,7 +129,13 @@ export default function Header({ isCollapsed, activeItem }: HeaderProps) {
                     <ul className="w-40 bg-white border rounded-md shadow-lg py-1 text-sm text-gray-700">
                         {chatOptions.map((item) => (
                             <li key={item}>
-                                <button onClick={() => setSelectedOption(item)} className="block w-full px-4 py-2 text-left hover:bg-gray-100">
+                                <button
+                                    onClick={() => {
+                                        setSelectedOption(item);
+                                        localStorage.setItem('chat_level', item.toLowerCase()); // 🔑 Save for API
+                                    }}
+                                    className="block w-full px-4 py-2 text-left hover:bg-gray-100"
+                                >
                                     {item}
                                 </button>
                             </li>
