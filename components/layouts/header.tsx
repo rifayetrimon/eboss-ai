@@ -49,34 +49,11 @@ export default function Header({ isCollapsed, activeItem }: HeaderProps) {
             }
         };
 
-        const fetchCategories = async () => {
-            if (activeItem !== 'Training') return;
-            setLoading(true);
-            try {
-                const res = await fetch('https://devapi02.awfatech.com/api/v1/llm/categories');
-                const data = await res.json();
-                if (data.success && Array.isArray(data.data)) {
-                    setCategoryList(data.data);
-                    // Set default selection if not already selected
-                    setSelectedOption((prev) => prev || data.data[1].display_name);
-                } else {
-                    setCategoryList([]);
-                }
-            } catch (err) {
-                console.error(err);
-                setCategoryList([]);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        // Reset selections when switching between sections
         if (activeItem === 'Chat' && !selectedOption) {
             setSelectedOption('Internal'); // Default for Chat
         }
 
         fetchExpertise();
-        fetchCategories();
     }, [activeItem]);
 
     const handleSelect = async (option: string) => {
@@ -163,56 +140,8 @@ export default function Header({ isCollapsed, activeItem }: HeaderProps) {
         }
 
         if (activeItem === 'Training') {
-            const trainingStaticOptions = ['Internal', 'Public'];
-            return (
-                <div className="flex gap-2">
-                    {/* First Dropdown: Internal/Public */}
-                    <Dropdown
-                        button={
-                            <div className="flex items-center gap-1 px-3 py-1.5 text-sm border rounded-md bg-white shadow-sm hover:bg-gray-50">
-                                <span>{selectedTrainingType}</span>
-                                <ChevronDown className="w-4 h-4" />
-                            </div>
-                        }
-                    >
-                        <ul className="w-40 bg-white border rounded-md shadow-lg py-1 text-sm text-gray-700">
-                            {trainingStaticOptions.map((item) => (
-                                <li key={item}>
-                                    <button onClick={() => handleTrainingTypeSelect(item)} className="block w-full px-4 py-2 text-left hover:bg-gray-100">
-                                        {item}
-                                    </button>
-                                </li>
-                            ))}
-                        </ul>
-                    </Dropdown>
-
-                    {/* Second Dropdown: Categories from API */}
-                    <Dropdown
-                        button={
-                            <div className="flex items-center gap-1 px-3 py-1.5 text-sm border rounded-md bg-white shadow-sm hover:bg-gray-50">
-                                <span>{selectedOption || 'Select Category'}</span>
-                                <ChevronDown className="w-4 h-4" />
-                            </div>
-                        }
-                    >
-                        <ul className="w-52 bg-white border rounded-md shadow-lg max-h-60 overflow-y-auto py-1 text-sm text-gray-700">
-                            {loading ? (
-                                <li className="px-4 py-2 text-gray-500">Loading...</li>
-                            ) : categoryList.length ? (
-                                categoryList.map((item) => (
-                                    <li key={item.value}>
-                                        <button onClick={() => setSelectedOption(item.display_name)} className="block w-full px-4 py-2 text-left hover:bg-gray-100">
-                                            {item.display_name}
-                                        </button>
-                                    </li>
-                                ))
-                            ) : (
-                                <li className="px-4 py-2 text-gray-500">No categories</li>
-                            )}
-                        </ul>
-                    </Dropdown>
-                </div>
-            );
+            // ❌ Removed dropdown, only static label
+            return <div className="text-sm font-medium text-gray-700">Training Mode: {selectedTrainingType}</div>;
         }
 
         return null;
