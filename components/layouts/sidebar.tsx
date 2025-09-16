@@ -1,6 +1,6 @@
 'use client';
 
-import { Home, History, X, Plus } from 'lucide-react';
+import { Home, History, X, Plus, User, MessageSquare, GraduationCap } from 'lucide-react';
 import IconAdd from '../icon/ai/icon-add';
 import IconSettings from '../icon/ai/icon-settings';
 import { useState, useEffect, useRef } from 'react';
@@ -69,9 +69,9 @@ export default function Sidebar({ onCollapseChange, activeItem, setActiveItem }:
     }
 
     const navigationItems = [
-        { id: 'Personality', icon: IconAdd, label: 'Personality' },
-        { id: 'Chat', icon: Home, label: 'Chat' },
-        { id: 'Training', icon: History, label: 'Training' },
+        { id: 'Personality', icon: User, label: 'Personality' },
+        { id: 'Chat', icon: MessageSquare, label: 'Chat' },
+        { id: 'Training', icon: GraduationCap, label: 'Training' },
     ];
 
     useEffect(() => {
