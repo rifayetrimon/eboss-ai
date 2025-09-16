@@ -1,0 +1,40 @@
+// Fetch training history
+export async function getTrainingHistory(encryptedKey: string | null) {
+    const res = await fetch('https://devapi02.awfatech.com/api/v1/llm/training-history', {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            ...(encryptedKey ? { 'x-encrypted-key': encryptedKey } : {}),
+        },
+        cache: 'no-store',
+    });
+
+    if (!res.ok) throw new Error('Failed to fetch training history');
+    return res.json();
+}
+
+// Upload training file
+export async function uploadTrainingFile(file: File, encryptedKey: string, category: string, level: string) {
+    const formData = new FormData();
+    formData.append('category', category);
+    formData.append('level', level);
+    formData.append('files', file); // API expects `files` array
+    formData.append('chunk_size', '1000');
+    formData.append('chunk_overlap', '200');
+    formData.append('force_reprocess', 'false');
+
+    const res = await fetch('https://devapi02.awfatech.com/api/v1/llm/load-resources/files', {
+        method: 'POST',
+        headers: {
+            'x-encrypted-key': encryptedKey,
+        },
+        body: formData,
+    });
+
+    if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`Upload failed: ${errText}`);
+    }
+
+    return res.json();
+}
