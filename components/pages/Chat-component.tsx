@@ -8,6 +8,7 @@ import remarkGfm from 'remark-gfm';
 import IconArrowUp from '@/components/icon/ai/icon-uparrow';
 import PinIcon from '@/components/icon/ai/icon-pin';
 import { sendChatWithResources, fetchChatSession } from '@/services/ai/chatApi';
+import { fetchChatSessions } from '@/services/ai/sidebar';
 import Loading from '../layouts/loading';
 
 interface ChatContentProps {
@@ -15,7 +16,7 @@ interface ChatContentProps {
     isSidebarCollapsed: boolean;
 }
 
-export default function ChatContent({ userName = 'Handsome', isSidebarCollapsed }: ChatContentProps) {
+export default function ChatContent({ userName = 'User', isSidebarCollapsed }: ChatContentProps) {
     const [inputValue, setInputValue] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [conversation, setConversation] = useState<{ role: string; text: string }[]>([]);
@@ -72,6 +73,17 @@ export default function ChatContent({ userName = 'Handsome', isSidebarCollapsed 
         }
     };
 
+    // ✅ Function to refresh sidebar sessions
+    const refreshSidebarSessions = async () => {
+        try {
+            const sessions = await fetchChatSessions();
+            // Dispatch event to update sidebar with fresh sessions
+            window.dispatchEvent(new CustomEvent('chatSessionsUpdated', { detail: sessions }));
+        } catch (error) {
+            console.error('❌ Failed to refresh sidebar sessions:', error);
+        }
+    };
+
     useEffect(() => {
         loadConversation();
     }, []);
@@ -107,6 +119,8 @@ export default function ChatContent({ userName = 'Handsome', isSidebarCollapsed 
         const userMessage = message ?? inputValue.trim();
         if (!userMessage) return;
 
+        const isFirstMessage = conversation.length === 0; // Track if this is the first message
+
         setIsLoading(true);
         setInputValue('');
         setConversation((prev) => [...prev, { role: 'user', text: userMessage }]);
@@ -127,8 +141,20 @@ export default function ChatContent({ userName = 'Handsome', isSidebarCollapsed 
             };
             setConversation((prev) => [...prev, aiResponse]);
 
+            // ✅ Handle new session creation
             if (data?.data?.session_id) {
-                localStorage.setItem('session_id', data.data.session_id);
+                const newSessionId = data.data.session_id;
+                const currentSessionId = localStorage.getItem('session_id');
+
+                localStorage.setItem('session_id', newSessionId);
+
+                // ✅ If this was the first message or session changed, refresh sidebar
+                if (isFirstMessage || currentSessionId !== newSessionId) {
+                    // Add a small delay to ensure the session is properly saved on backend
+                    setTimeout(() => {
+                        refreshSidebarSessions();
+                    }, 500);
+                }
             }
         } catch (error: any) {
             let errorMessage = 'Sorry, something went wrong. Please try again.';

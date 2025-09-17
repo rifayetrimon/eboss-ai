@@ -37,7 +37,7 @@ export const fetchChatSessions = async (): Promise<ChatSession[]> => {
     }
 
     const data: ChatSessionsResponse = await response.json();
-    console.log('📜 Full API response (chat-sessions list):', data);
+    // console.log('📜 Full API response (chat-sessions list):', data);
 
     return data?.data ?? [];
 };

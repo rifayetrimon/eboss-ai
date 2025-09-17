@@ -68,10 +68,11 @@ export default function Sidebar({ onCollapseChange, activeItem, setActiveItem }:
         }
     }
 
+    // Updated navigation items without New Chat (it's now fixed at top)
     const navigationItems = [
-        { id: 'Personality', icon: User, label: 'Personality' },
         { id: 'Chat', icon: MessageSquare, label: 'Chat' },
         { id: 'Training', icon: GraduationCap, label: 'Training' },
+        { id: 'Personality', icon: User, label: 'Personality' },
     ];
 
     useEffect(() => {
@@ -88,17 +89,45 @@ export default function Sidebar({ onCollapseChange, activeItem, setActiveItem }:
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [mobileOpen]);
 
-    const renderNavButtons = (isMobile = false) => {
-        const itemsToRender = [...navigationItems];
-        if (activeItem === 'Chat') {
-            itemsToRender.splice(itemsToRender.findIndex((i) => i.id === 'Chat') + 1, 0, {
-                id: 'NewChat',
-                icon: Plus,
-                label: 'New Chat',
-            });
-        }
+    const renderNewChatButton = (isMobile = false) => {
+        return (
+            <motion.button
+                {...(!isCollapsed || isMobile
+                    ? {
+                          initial: { opacity: 0, x: -10 },
+                          animate: { opacity: 1, x: 0 },
+                          exit: { opacity: 0, x: -10 },
+                          transition: { duration: 0.2 },
+                      }
+                    : {})}
+                className={`w-full flex items-center gap-3 h-10 px-3 rounded-md text-blue-600 transition-all duration-200
+                    hover:bg-blue-100 hover:translate-x-1
+                    ${!isMobile && isCollapsed ? 'justify-center' : 'justify-start'}`}
+                onClick={() => {
+                    startNewChat();
+                    setActiveItem('Chat');
+                    if (isMobile) setMobileOpen(false);
+                }}
+                title={!isMobile && isCollapsed ? 'New Chat' : undefined}
+            >
+                {/* Always show the blue background circle for consistency */}
+                <div className="flex-shrink-0 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
+                    <IconAdd className="h-3 w-3 text-white" />
+                </div>
 
-        return itemsToRender.map((item, index) => {
+                <AnimatePresence mode="wait" initial={false}>
+                    {(!isCollapsed || isMobile) && (
+                        <motion.span key="new-chat" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="whitespace-nowrap">
+                            New Chat
+                        </motion.span>
+                    )}
+                </AnimatePresence>
+            </motion.button>
+        );
+    };
+
+    const renderNavButtons = (isMobile = false) => {
+        return navigationItems.map((item, index) => {
             const Icon = item.icon;
             return (
                 <motion.button
@@ -116,17 +145,16 @@ export default function Sidebar({ onCollapseChange, activeItem, setActiveItem }:
                         ${activeItem === item.id ? 'bg-gray-200 font-medium' : ''}
                         ${!isMobile && isCollapsed ? 'justify-center' : 'justify-start'}`}
                     onClick={() => {
-                        if (item.id === 'NewChat') {
-                            startNewChat();
-                            setActiveItem('Chat');
-                        } else {
-                            setActiveItem(item.id);
-                        }
+                        setActiveItem(item.id);
                         if (isMobile) setMobileOpen(false);
                     }}
                     title={!isMobile && isCollapsed ? item.label : undefined}
                 >
-                    <Icon className="h-4 w-4 flex-shrink-0" />
+                    {/* Consistent icon container size to align with New Chat button */}
+                    <div className="flex-shrink-0 w-6 h-6 flex items-center justify-center">
+                        <Icon className="h-4 w-4" />
+                    </div>
+
                     <AnimatePresence mode="wait" initial={false}>
                         {(!isCollapsed || isMobile) && (
                             <motion.span key={item.label} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="whitespace-nowrap">
@@ -161,7 +189,12 @@ export default function Sidebar({ onCollapseChange, activeItem, setActiveItem }:
                 </div>
 
                 <div className="flex-1 flex flex-col overflow-hidden">
-                    <div className="px-2 pt-2 space-y-0.5">{renderNavButtons(false)}</div>
+                    {/* Fixed New Chat button at top */}
+                    <div className="px-2 pt-2">{renderNewChatButton(false)}</div>
+
+                    {/* Other navigation items */}
+                    <div className="px-2 pt-1 space-y-0.5">{renderNavButtons(false)}</div>
+
                     {!isCollapsed && <div className="my-2 border-t border-gray-200"></div>}
 
                     <div className="flex-1 overflow-y-auto px-2">
@@ -185,6 +218,7 @@ export default function Sidebar({ onCollapseChange, activeItem, setActiveItem }:
                             ))}
                         </div>
                     </div>
+
                     {!isCollapsed && <div className="my-2 border-t border-gray-200"></div>}
                 </div>
 
@@ -193,7 +227,9 @@ export default function Sidebar({ onCollapseChange, activeItem, setActiveItem }:
                         className={`w-full flex items-center gap-3 h-10 px-3 rounded-md hover:bg-gray-100 ${isCollapsed ? 'justify-center' : 'justify-start'}`}
                         onClick={() => setActiveItem('Settings')}
                     >
-                        <IconSettings className="h-4 w-4" />
+                        <div className="flex-shrink-0 w-6 h-6 flex items-center justify-center">
+                            <IconSettings className="h-4 w-4" />
+                        </div>
                         <AnimatePresence>
                             {!isCollapsed && (
                                 <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -207,13 +243,15 @@ export default function Sidebar({ onCollapseChange, activeItem, setActiveItem }:
                         className={`w-full flex items-center gap-3 h-10 px-3 rounded-md hover:bg-gray-100 ${isCollapsed ? 'justify-center' : 'justify-start'}`}
                         onClick={() => setActiveItem('Profile')}
                     >
-                        <Image
-                            src={data?.personal?.file_profile_url || '/assets/images/user-profile.jpeg'}
-                            alt="Profile picture"
-                            width={32}
-                            height={32}
-                            className="h-8 w-8 rounded-full object-cover flex-shrink-0"
-                        />
+                        <div className="flex-shrink-0 w-6 h-6 flex items-center justify-center">
+                            <Image
+                                src={data?.personal?.file_profile_url || '/assets/images/user-profile.jpeg'}
+                                alt="Profile picture"
+                                width={24}
+                                height={24}
+                                className="h-6 w-6 rounded-full object-cover"
+                            />
+                        </div>
                         <AnimatePresence>
                             {!isCollapsed && (
                                 <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -261,8 +299,11 @@ export default function Sidebar({ onCollapseChange, activeItem, setActiveItem }:
                                 </button>
                             </div>
 
-                            {/* Menu at top */}
-                            <div className="px-2 py-3 flex-shrink-0">{renderNavButtons(true)}</div>
+                            {/* Fixed New Chat button at top for mobile */}
+                            <div className="px-2 py-3 flex-shrink-0">{renderNewChatButton(true)}</div>
+
+                            {/* Other menu items */}
+                            <div className="px-2 pb-3 flex-shrink-0">{renderNavButtons(true)}</div>
 
                             {/* Scrollable History */}
                             <div className="flex-1 overflow-y-auto px-2 py-2">
@@ -276,7 +317,11 @@ export default function Sidebar({ onCollapseChange, activeItem, setActiveItem }:
                                             className="w-full flex items-center h-9 px-3 rounded-md text-gray-700 hover:bg-gray-100"
                                             onClick={() => {
                                                 localStorage.setItem('session_id', session.session_id);
-                                                window.dispatchEvent(new CustomEvent('chatSessionSelected', { detail: session.session_id }));
+                                                window.dispatchEvent(
+                                                    new CustomEvent('chatSessionSelected', {
+                                                        detail: session.session_id,
+                                                    }),
+                                                );
                                                 setActiveItem('Chat');
                                                 setMobileOpen(false);
                                             }}
@@ -290,17 +335,21 @@ export default function Sidebar({ onCollapseChange, activeItem, setActiveItem }:
                             {/* Footer */}
                             <div className="p-2 border-t flex-shrink-0 space-y-1">
                                 <button className="w-full flex items-center gap-3 h-10 px-3 rounded-md hover:bg-gray-100" onClick={() => setActiveItem('Settings')}>
-                                    <IconSettings className="h-4 w-4" />
+                                    <div className="flex-shrink-0 w-6 h-6 flex items-center justify-center">
+                                        <IconSettings className="h-4 w-4" />
+                                    </div>
                                     <span>Settings</span>
                                 </button>
                                 <button className="w-full flex items-center gap-3 h-10 px-3 rounded-md hover:bg-gray-100" onClick={() => setActiveItem('Profile')}>
-                                    <Image
-                                        src={data?.personal?.file_profile_url || '/assets/images/user-profile.jpeg'}
-                                        alt="Profile picture"
-                                        width={32}
-                                        height={32}
-                                        className="h-8 w-8 rounded-full object-cover"
-                                    />
+                                    <div className="flex-shrink-0 w-6 h-6 flex items-center justify-center">
+                                        <Image
+                                            src={data?.personal?.file_profile_url || '/assets/images/user-profile.jpeg'}
+                                            alt="Profile picture"
+                                            width={24}
+                                            height={24}
+                                            className="h-6 w-6 rounded-full object-cover"
+                                        />
+                                    </div>
                                     <span>Profile</span>
                                 </button>
                             </div>

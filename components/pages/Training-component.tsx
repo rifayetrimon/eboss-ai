@@ -8,7 +8,70 @@ import { getTrainingHistory, uploadTrainingFile } from '@/services/ai/training';
 import Loading from '../layouts/loading';
 
 // -------------------- TrainingHistory Component --------------------
+// function TrainingHistory({ setIsOpen, history, loading, error }: { setIsOpen: (v: boolean) => void; history: any[]; loading: boolean; error: string | null }) {
+//     return (
+//         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="relative z-0 flex flex-col h-full px-6 pt-14 pb-6">
+//             {/* Header (fixed, no scroll) */}
+//             <div className="flex items-center justify-between mb-6 shrink-0">
+//                 <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">Training History</h2>
+//                 <button onClick={() => setIsOpen(true)} className="px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition">
+//                     Train File
+//                 </button>
+//             </div>
+
+//             {/* History List (only this scrolls) */}
+//             <div className="flex-1 overflow-y-auto pr-2 space-y-6">
+//                 {loading ? (
+//                     <Loading />
+//                 ) : error ? (
+//                     <p className="text-red-500">{error}</p>
+//                 ) : history.length > 0 ? (
+//                     history.map((item) => (
+//                         <div
+//                             key={item._id}
+//                             className="flex flex-col justify-between bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition"
+//                         >
+//                             <div>
+//                                 <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 truncate">{item.filename}</h3>
+//                                 <p className="mt-2 text-sm text-gray-600 dark:text-gray-300 line-clamp-3">{item.description || 'No description available.'}</p>
+//                             </div>
+//                             <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
+//                                 <span className="px-2 py-1 rounded-md bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300 font-medium">{item.file_type.toUpperCase()}</span>
+//                                 <span className="px-2 py-1 rounded-md bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-300 font-medium">{item.category || 'N/A'}</span>
+//                                 <span className="px-2 py-1 rounded-md bg-pink-100 text-pink-700 dark:bg-pink-900 dark:text-pink-300 font-medium">{item.level || 'N/A'}</span>
+//                             </div>
+//                         </div>
+//                     ))
+//                 ) : (
+//                     <p className="text-gray-500 dark:text-gray-400">No training history available.</p>
+//                 )}
+//             </div>
+//         </motion.div>
+//     );
+// }
+
 function TrainingHistory({ setIsOpen, history, loading, error }: { setIsOpen: (v: boolean) => void; history: any[]; loading: boolean; error: string | null }) {
+    const handleDelete = (itemId: string, filename: string) => {
+        // Add your delete logic here
+        if (confirm(`Are you sure you want to delete "${filename}"?`)) {
+            console.log('Delete item:', itemId);
+            // Call your delete API here
+        }
+    };
+
+    const formatDate = (dateString: string) => {
+        if (!dateString) return 'N/A';
+        try {
+            return new Date(dateString).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+            });
+        } catch {
+            return 'Invalid Date';
+        }
+    };
+
     return (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="relative z-0 flex flex-col h-full px-6 pt-14 pb-6">
             {/* Header (fixed, no scroll) */}
@@ -31,14 +94,41 @@ function TrainingHistory({ setIsOpen, history, loading, error }: { setIsOpen: (v
                             key={item._id}
                             className="flex flex-col justify-between bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition"
                         >
-                            <div>
-                                <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 truncate">{item.filename}</h3>
-                                <p className="mt-2 text-sm text-gray-600 dark:text-gray-300 line-clamp-3">{item.description || 'No description available.'}</p>
+                            {/* Header with filename and upload date */}
+                            <div className="flex items-start justify-between mb-3">
+                                <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 truncate flex-1 mr-4">{item.filename}</h3>
+                                <span className="text-sm text-gray-500 dark:text-gray-400 flex-shrink-0">{item.upload_date}</span>
                             </div>
-                            <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
-                                <span className="px-2 py-1 rounded-md bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300 font-medium">{item.file_type.toUpperCase()}</span>
-                                <span className="px-2 py-1 rounded-md bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-300 font-medium">{item.category || 'N/A'}</span>
-                                <span className="px-2 py-1 rounded-md bg-pink-100 text-pink-700 dark:bg-pink-900 dark:text-pink-300 font-medium">{item.level || 'N/A'}</span>
+
+                            {/* Description */}
+                            <div>
+                                <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-3 mb-4">{item.description || 'No description available.'}</p>
+                            </div>
+
+                            {/* Footer with tags and delete button */}
+                            <div className="flex items-center justify-between">
+                                {/* Tags */}
+                                <div className="flex flex-wrap items-center gap-3 text-sm">
+                                    <span className="px-2 py-1 rounded-md bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300 font-medium">{item.file_type.toUpperCase()}</span>
+                                    <span className="px-2 py-1 rounded-md bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-300 font-medium">{item.category || 'N/A'}</span>
+                                    <span className="px-2 py-1 rounded-md bg-pink-100 text-pink-700 dark:bg-pink-900 dark:text-pink-300 font-medium">{item.level || 'N/A'}</span>
+                                </div>
+
+                                {/* Delete button */}
+                                <button
+                                    onClick={() => handleDelete(item._id, item.filename)}
+                                    className="ml-4 p-2 bg-red-300 text-red-700 hover:text-white hover:bg-red-500 dark:hover:bg-red-900/20 rounded-lg transition-colors flex-shrink-0"
+                                    title={`Delete ${item.filename}`}
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                        />
+                                    </svg>
+                                </button>
                             </div>
                         </div>
                     ))

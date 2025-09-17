@@ -13,7 +13,7 @@ export default function HomePage() {
     const [activeItem, setActiveItem] = useState('Chat');
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const { data } = useProfile();
-    const userName = data?.personal?.full_name || 'Handsome';
+    const userName = data?.personal?.full_name || 'User';
 
     const renderContent = () => {
         switch (activeItem) {
