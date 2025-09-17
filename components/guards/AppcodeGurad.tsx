@@ -14,7 +14,7 @@ const AppCodeGuard = ({ children }: Props) => {
     useEffect(() => {
         const token = localStorage.getItem('x-encrypted-key');
         if (!token) {
-            router.replace('/auth/appcode'); // redirect if no token
+            router.replace('eboss-ai-chat/auth/appcode'); // redirect if no token
         } else {
             setIsAllowed(true); // allow rendering
         }
