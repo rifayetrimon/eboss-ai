@@ -4,72 +4,79 @@ import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronDown, X } from 'lucide-react';
 import Dropdown from '../dropdown';
-import { getTrainingHistory, uploadTrainingFile } from '@/services/ai/training';
+import { getTrainingHistory, uploadTrainingFile, deleteTrainingDocument } from '@/services/ai/training';
 import Loading from '../layouts/loading';
 
 // -------------------- TrainingHistory Component --------------------
-// function TrainingHistory({ setIsOpen, history, loading, error }: { setIsOpen: (v: boolean) => void; history: any[]; loading: boolean; error: string | null }) {
-//     return (
-//         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="relative z-0 flex flex-col h-full px-6 pt-14 pb-6">
-//             {/* Header (fixed, no scroll) */}
-//             <div className="flex items-center justify-between mb-6 shrink-0">
-//                 <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">Training History</h2>
-//                 <button onClick={() => setIsOpen(true)} className="px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition">
-//                     Train File
-//                 </button>
-//             </div>
+function TrainingHistory({
+    setIsOpen,
+    history,
+    loading,
+    error,
+    refreshHistory,
+}: {
+    setIsOpen: (v: boolean) => void;
+    history: any[];
+    loading: boolean;
+    error: string | null;
+    refreshHistory: () => Promise<void>;
+}) {
+    const [deletingId, setDeletingId] = useState<string | null>(null);
 
-//             {/* History List (only this scrolls) */}
-//             <div className="flex-1 overflow-y-auto pr-2 space-y-6">
-//                 {loading ? (
-//                     <Loading />
-//                 ) : error ? (
-//                     <p className="text-red-500">{error}</p>
-//                 ) : history.length > 0 ? (
-//                     history.map((item) => (
-//                         <div
-//                             key={item._id}
-//                             className="flex flex-col justify-between bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition"
-//                         >
-//                             <div>
-//                                 <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 truncate">{item.filename}</h3>
-//                                 <p className="mt-2 text-sm text-gray-600 dark:text-gray-300 line-clamp-3">{item.description || 'No description available.'}</p>
-//                             </div>
-//                             <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
-//                                 <span className="px-2 py-1 rounded-md bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300 font-medium">{item.file_type.toUpperCase()}</span>
-//                                 <span className="px-2 py-1 rounded-md bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-300 font-medium">{item.category || 'N/A'}</span>
-//                                 <span className="px-2 py-1 rounded-md bg-pink-100 text-pink-700 dark:bg-pink-900 dark:text-pink-300 font-medium">{item.level || 'N/A'}</span>
-//                             </div>
-//                         </div>
-//                     ))
-//                 ) : (
-//                     <p className="text-gray-500 dark:text-gray-400">No training history available.</p>
-//                 )}
-//             </div>
-//         </motion.div>
-//     );
-// }
+    const handleDelete = async (documentId: string, filename: string) => {
+        if (!confirm(`Are you sure you want to delete "${filename}"?`)) return;
 
-function TrainingHistory({ setIsOpen, history, loading, error }: { setIsOpen: (v: boolean) => void; history: any[]; loading: boolean; error: string | null }) {
-    const handleDelete = (itemId: string, filename: string) => {
-        // Add your delete logic here
-        if (confirm(`Are you sure you want to delete "${filename}"?`)) {
-            console.log('Delete item:', itemId);
-            // Call your delete API here
+        try {
+            const key = localStorage.getItem('x-encrypted-key');
+            if (!key) {
+                alert('Missing encrypted key!');
+                return;
+            }
+
+            setDeletingId(documentId);
+
+            await deleteTrainingDocument(documentId, key);
+
+            alert(`"${filename}" deleted successfully`);
+            await refreshHistory(); // ✅ refresh history after delete
+        } catch (err: any) {
+            console.error(err);
+            alert(`Failed to delete: ${err.message}`);
+        } finally {
+            setDeletingId(null);
         }
     };
 
-    const formatDate = (dateString: string) => {
+    // ✅ Format Date + Time
+    const formatDateTime = (dateString: any) => {
         if (!dateString) return 'N/A';
-        try {
-            return new Date(dateString).toLocaleDateString('en-US', {
+
+        // If it's a number (timestamp)
+        if (!isNaN(dateString)) {
+            const ts = Number(dateString);
+            const date = ts < 1e12 ? new Date(ts * 1000) : new Date(ts);
+            return date.toLocaleString('en-US', {
                 year: 'numeric',
                 month: 'short',
                 day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
             });
-        } catch {
-            return 'Invalid Date';
         }
+
+        // If it's a string like "2025-09-17 10:30:00"
+        const normalized = dateString.replace(' ', 'T');
+        const date = new Date(normalized);
+
+        if (isNaN(date.getTime())) return 'Invalid Date';
+
+        return date.toLocaleString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+        });
     };
 
     return (
@@ -116,18 +123,27 @@ function TrainingHistory({ setIsOpen, history, loading, error }: { setIsOpen: (v
 
                                 {/* Delete button */}
                                 <button
-                                    onClick={() => handleDelete(item._id, item.filename)}
-                                    className="ml-4 p-2 bg-red-300 text-red-700 hover:text-white hover:bg-red-500 dark:hover:bg-red-900/20 rounded-lg transition-colors flex-shrink-0"
+                                    onClick={() => handleDelete(item.document_id, item.filename)}
+                                    disabled={deletingId === item.document_id}
+                                    className={`ml-4 p-2 rounded-lg transition-colors flex-shrink-0 ${
+                                        deletingId === item.document_id
+                                            ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+                                            : 'bg-red-300 text-red-700 hover:text-white hover:bg-red-500 dark:hover:bg-red-900/20'
+                                    }`}
                                     title={`Delete ${item.filename}`}
                                 >
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                        />
-                                    </svg>
+                                    {deletingId === item.document_id ? (
+                                        <span className="text-xs">Deleting...</span>
+                                    ) : (
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={2}
+                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                            />
+                                        </svg>
+                                    )}
                                 </button>
                             </div>
                         </div>
@@ -217,7 +233,7 @@ export default function TrainingPage() {
     return (
         <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
             {/* Training history */}
-            <TrainingHistory setIsOpen={setIsOpen} history={history} loading={loadingHistory} error={errorHistory} />
+            <TrainingHistory setIsOpen={setIsOpen} history={history} loading={loadingHistory} error={errorHistory} refreshHistory={fetchHistory} />
 
             {/* Modal */}
             {isOpen && (

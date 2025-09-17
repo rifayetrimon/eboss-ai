@@ -16,7 +16,6 @@ export async function getTrainingHistory(encryptedKey: string | null) {
 }
 
 // Upload training file
-// Upload training file
 export async function uploadTrainingFile(file: File, encryptedKey: string, category: string, level: string) {
     const formData = new FormData();
     formData.append('category', category);
@@ -51,6 +50,24 @@ export async function uploadTrainingFile(file: File, encryptedKey: string, categ
     if (!res.ok) {
         const errText = await res.text();
         throw new Error(`Upload failed: ${errText}`);
+    }
+
+    return res.json();
+}
+
+// Delete training document
+export async function deleteTrainingDocument(documentId: string, encryptedKey: string) {
+    const res = await fetch(`https://devapi02.awfatech.com/api/v1/llm/delete-document/${documentId}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            'x-encrypted-key': encryptedKey,
+        },
+    });
+
+    if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`Delete failed: ${errText}`);
     }
 
     return res.json();
