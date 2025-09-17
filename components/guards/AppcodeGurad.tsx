@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 type Props = {
     children: React.ReactNode;
@@ -9,12 +9,17 @@ type Props = {
 
 const AppCodeGuard = ({ children }: Props) => {
     const router = useRouter();
+    const pathname = usePathname();
     const [isAllowed, setIsAllowed] = useState(false);
 
     useEffect(() => {
+        if (pathname.startsWith('/auth')) {
+            setIsAllowed(true);
+            return;
+        }
         const token = localStorage.getItem('x-encrypted-key');
         if (!token) {
-            router.replace('eboss-ai-chat/auth/appcode'); // redirect if no token
+            router.replace('/auth/appcode'); // redirect if no token
         } else {
             setIsAllowed(true); // allow rendering
         }
