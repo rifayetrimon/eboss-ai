@@ -1,6 +1,6 @@
 services:
     app:
-        image: yourapp:latest
+        image: eboss-ai-chat:latest
         deploy:
             resources:
                 limits:
