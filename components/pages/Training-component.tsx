@@ -48,11 +48,11 @@ function TrainingHistory({
     };
 
     // ✅ Format Date + Time
-    const formatDateTime = (dateString: any) => {
+    const formatDateTime = (dateString: string | number | null | undefined) => {
         if (!dateString) return 'N/A';
 
-        // If it's a number (timestamp)
-        if (!isNaN(dateString)) {
+        // Handle timestamps
+        if (typeof dateString === 'number' || !isNaN(Number(dateString))) {
             const ts = Number(dateString);
             const date = ts < 1e12 ? new Date(ts * 1000) : new Date(ts);
             return date.toLocaleString('en-US', {
@@ -64,19 +64,39 @@ function TrainingHistory({
             });
         }
 
-        // If it's a string like "2025-09-17 10:30:00"
-        const normalized = dateString.replace(' ', 'T');
-        const date = new Date(normalized);
+        // Handle the new "DD-MM-YYYY hh:mm:ss A" format
+        // Note: The previous logic might fail on invalid dates, so a more robust approach is better.
+        try {
+            const parts = dateString.split(' ');
+            if (parts.length < 3) throw new Error('Invalid format');
 
-        if (isNaN(date.getTime())) return 'Invalid Date';
+            const dateParts = parts[0].split('-');
+            const timeParts = parts[1].split(':');
+            const ampm = parts[2];
 
-        return date.toLocaleString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-        });
+            const [day, month, year] = dateParts.map(Number);
+            let [hour, minute, second] = timeParts.map(Number);
+
+            // Convert to 24-hour format
+            if (ampm === 'PM' && hour < 12) hour += 12;
+            if (ampm === 'AM' && hour === 12) hour = 0;
+
+            const date = new Date(year, month - 1, day, hour, minute, second);
+
+            if (isNaN(date.getTime())) {
+                throw new Error('Invalid date object');
+            }
+
+            return date.toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+            });
+        } catch (e) {
+            return 'Invalid Date';
+        }
     };
 
     return (
@@ -104,7 +124,7 @@ function TrainingHistory({
                             {/* Header with filename and upload date */}
                             <div className="flex items-start justify-between mb-3">
                                 <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 truncate flex-1 mr-4">{item.filename}</h3>
-                                <span className="text-sm text-gray-500 dark:text-gray-400 flex-shrink-0">{item.upload_date}</span>
+                                <span className="text-sm text-blue-800 dark:text-gray-400 flex-shrink-0">{formatDateTime(item.upload_date)}</span>
                             </div>
 
                             {/* Description */}
