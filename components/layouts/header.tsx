@@ -21,7 +21,25 @@ export default function Header({ isCollapsed, activeItem }: HeaderProps) {
 
     const capitalize = (str: string) => (str ? str.charAt(0).toUpperCase() + str.slice(1) : '');
 
-    // Load expertise list
+    // ----------------- ✅ Sync Chat Level with localStorage -----------------
+    useEffect(() => {
+        const storedChatLevel = localStorage.getItem('chat_level') || 'internal';
+        setSelectedChatOption(capitalize(storedChatLevel));
+
+        // Listen for localStorage changes (e.g., manual edit in DevTools)
+        const handleStorageChange = () => {
+            const updatedLevel = localStorage.getItem('chat_level') || 'internal';
+            setSelectedChatOption(capitalize(updatedLevel));
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+        };
+    }, []);
+    // -----------------------------------------------------------------------
+
+    // ----------------- Load Expertise List -----------------
     useEffect(() => {
         const fetchExpertise = async () => {
             if (activeItem !== 'Personality') return;
@@ -34,13 +52,11 @@ export default function Header({ isCollapsed, activeItem }: HeaderProps) {
                 if (data.success && Array.isArray(data.data)) {
                     setExpertiseList(data.data);
 
-                    // ✅ First check localStorage
                     const storedExpertise = localStorage.getItem('selected_expertise');
 
                     if (storedExpertise) {
                         setSelectedExpertise(capitalize(storedExpertise));
                     } else {
-                        // otherwise use API default
                         const defaultOption = data.current_expertise ? capitalize(data.current_expertise) : capitalize(data.data[0]);
                         setSelectedExpertise(defaultOption);
                         localStorage.setItem('selected_expertise', defaultOption.toLowerCase());
@@ -58,11 +74,12 @@ export default function Header({ isCollapsed, activeItem }: HeaderProps) {
 
         fetchExpertise();
     }, [activeItem]);
+    // -------------------------------------------------------
 
-    // Handle selecting Personality expertise
+    // ----------------- Handle Personality Expertise -----------------
     const handleExpertiseSelect = async (option: string) => {
         setSelectedExpertise(option);
-        localStorage.setItem('selected_expertise', option.toLowerCase()); // ✅ save choice
+        localStorage.setItem('selected_expertise', option.toLowerCase());
 
         try {
             const encryptedKey = localStorage.getItem('x-encrypted-key');
@@ -87,8 +104,9 @@ export default function Header({ isCollapsed, activeItem }: HeaderProps) {
             console.error('Error changing expertise:', err);
         }
     };
+    // -------------------------------------------------------
 
-    // Dropdown renderer
+    // ----------------- Dropdown Renderer -----------------
     const renderDropdown = () => {
         if (activeItem === 'Personality') {
             return (
@@ -144,7 +162,7 @@ export default function Header({ isCollapsed, activeItem }: HeaderProps) {
                                         setSelectedChatOption(item);
                                         localStorage.setItem('chat_level', item.toLowerCase());
                                     }}
-                                    className="block w-full px-4 py-2 text-left hover:bg-gray-100"
+                                    className={`block w-full px-4 py-2 text-left hover:bg-gray-100 ${selectedChatOption === item ? 'bg-gray-100 font-semibold' : ''}`}
                                 >
                                     {item}
                                 </button>
@@ -161,6 +179,7 @@ export default function Header({ isCollapsed, activeItem }: HeaderProps) {
 
         return null;
     };
+    // -------------------------------------------------------
 
     return (
         <header
