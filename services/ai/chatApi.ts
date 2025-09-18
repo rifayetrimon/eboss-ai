@@ -23,7 +23,7 @@ export const sendChatWithResources = async (payload: ChatRequest) => {
     }
 
     // ✅ Restore chat level if not passed
-    let chatLevel = payload.level || localStorage.getItem('chat_level') || 'internal';
+    let chatLevel = localStorage.getItem('chat_level');
 
     const url = 'https://devapi02.awfatech.com/api/v1/llm/chat-with-resources';
 
@@ -36,7 +36,7 @@ export const sendChatWithResources = async (payload: ChatRequest) => {
         body: JSON.stringify({
             message: payload.message,
             session_id: sessionId ?? '',
-            level: chatLevel, // 🔑 Pass dropdown value here
+            level: chatLevel,
             max_results: payload.max_results ?? 5,
             include_metadata: payload.include_metadata ?? false,
         }),
@@ -44,7 +44,7 @@ export const sendChatWithResources = async (payload: ChatRequest) => {
 
     const res = await fetch(url, options);
     if (!res.ok) throw new Error(`API Error: ${res.statusText}`);
-
+    console.log('Chat API Response:', chatLevel);
     return res.json();
 };
 

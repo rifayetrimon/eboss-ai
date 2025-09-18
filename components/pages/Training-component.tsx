@@ -49,45 +49,6 @@ function TrainingHistory({
         }
     };
 
-    const formatDateTime = (dateString: string | number | null | undefined) => {
-        if (!dateString) return 'N/A';
-        if (typeof dateString === 'number' || !isNaN(Number(dateString))) {
-            const ts = Number(dateString);
-            const date = ts < 1e12 ? new Date(ts * 1000) : new Date(ts);
-            return date.toLocaleString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-            });
-        }
-        try {
-            const parts = dateString.split(' ');
-            if (parts.length < 3) throw new Error('Invalid format');
-            const dateParts = parts[0].split('-');
-            const timeParts = parts[1].split(':');
-            const ampm = parts[2];
-
-            const [day, month, year] = dateParts.map(Number);
-            let [hour, minute, second] = timeParts.map(Number);
-            if (ampm === 'PM' && hour < 12) hour += 12;
-            if (ampm === 'AM' && hour === 12) hour = 0;
-            const date = new Date(year, month - 1, day, hour, minute, second);
-
-            if (isNaN(date.getTime())) throw new Error('Invalid date object');
-            return date.toLocaleString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-            });
-        } catch {
-            return 'Invalid Date';
-        }
-    };
-
     return (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="relative z-0 flex flex-col h-full px-6 pt-14 pb-6">
             {/* Header */}
@@ -112,7 +73,14 @@ function TrainingHistory({
                         >
                             <div className="flex items-start justify-between mb-3">
                                 <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 truncate flex-1 mr-4">{item.filename}</h3>
-                                <span className="text-sm text-blue-800 dark:text-gray-400 flex-shrink-0">{formatDateTime(item.upload_date)}</span>
+                                {/* <span className="text-sm text-blue-800 dark:text-gray-400 flex-shrink-0">
+                                    {item.upload_date}
+                                    {item.upload_time}
+                                </span> */}
+                                <div className="text-right text-sm text-blue-800 dark:text-gray-400 flex-shrink-0">
+                                    <div>{item.upload_date}</div>
+                                    <div>{item.upload_time}</div>
+                                </div>
                             </div>
 
                             <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-3 mb-4">{item.description || 'No description available.'}</p>
