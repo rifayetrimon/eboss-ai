@@ -6,6 +6,7 @@ import { ChevronDown, X } from 'lucide-react';
 import Dropdown from '../dropdown';
 import { getTrainingHistory, uploadTrainingFile, deleteTrainingDocument } from '@/services/ai/training';
 import Loading from '../layouts/loading';
+import Alert from '../ui/alert';
 
 // -------------------- TrainingHistory Component --------------------
 function TrainingHistory({
@@ -14,12 +15,14 @@ function TrainingHistory({
     loading,
     error,
     refreshHistory,
+    showAlert,
 }: {
     setIsOpen: (v: boolean) => void;
     history: any[];
     loading: boolean;
     error: string | null;
     refreshHistory: () => Promise<void>;
+    showAlert: (type: 'success' | 'danger' | 'warning' | 'info', message: string) => void;
 }) {
     const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -29,29 +32,25 @@ function TrainingHistory({
         try {
             const key = localStorage.getItem('x-encrypted-key');
             if (!key) {
-                alert('Missing encrypted key!');
+                showAlert('danger', 'Missing encrypted key!');
                 return;
             }
 
             setDeletingId(documentId);
-
             await deleteTrainingDocument(documentId, key);
 
-            alert(`"${filename}" deleted successfully`);
-            await refreshHistory(); // ✅ refresh history after delete
+            showAlert('success', `"${filename}" deleted successfully`);
+            await refreshHistory();
         } catch (err: any) {
             console.error(err);
-            alert(`Failed to delete: ${err.message}`);
+            showAlert('danger', `Failed to delete: ${err.message}`);
         } finally {
             setDeletingId(null);
         }
     };
 
-    // ✅ Format Date + Time
     const formatDateTime = (dateString: string | number | null | undefined) => {
         if (!dateString) return 'N/A';
-
-        // Handle timestamps
         if (typeof dateString === 'number' || !isNaN(Number(dateString))) {
             const ts = Number(dateString);
             const date = ts < 1e12 ? new Date(ts * 1000) : new Date(ts);
@@ -63,30 +62,20 @@ function TrainingHistory({
                 minute: '2-digit',
             });
         }
-
-        // Handle the new "DD-MM-YYYY hh:mm:ss A" format
-        // Note: The previous logic might fail on invalid dates, so a more robust approach is better.
         try {
             const parts = dateString.split(' ');
             if (parts.length < 3) throw new Error('Invalid format');
-
             const dateParts = parts[0].split('-');
             const timeParts = parts[1].split(':');
             const ampm = parts[2];
 
             const [day, month, year] = dateParts.map(Number);
             let [hour, minute, second] = timeParts.map(Number);
-
-            // Convert to 24-hour format
             if (ampm === 'PM' && hour < 12) hour += 12;
             if (ampm === 'AM' && hour === 12) hour = 0;
-
             const date = new Date(year, month - 1, day, hour, minute, second);
 
-            if (isNaN(date.getTime())) {
-                throw new Error('Invalid date object');
-            }
-
+            if (isNaN(date.getTime())) throw new Error('Invalid date object');
             return date.toLocaleString('en-US', {
                 year: 'numeric',
                 month: 'short',
@@ -94,14 +83,14 @@ function TrainingHistory({
                 hour: '2-digit',
                 minute: '2-digit',
             });
-        } catch (e) {
+        } catch {
             return 'Invalid Date';
         }
     };
 
     return (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="relative z-0 flex flex-col h-full px-6 pt-14 pb-6">
-            {/* Header (fixed, no scroll) */}
+            {/* Header */}
             <div className="flex items-center justify-between mb-6 shrink-0">
                 <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">Training History</h2>
                 <button onClick={() => setIsOpen(true)} className="px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition">
@@ -109,7 +98,7 @@ function TrainingHistory({
                 </button>
             </div>
 
-            {/* History List (only this scrolls) */}
+            {/* History List */}
             <div className="flex-1 overflow-y-auto pr-2 space-y-6">
                 {loading ? (
                     <Loading />
@@ -121,27 +110,20 @@ function TrainingHistory({
                             key={item._id}
                             className="flex flex-col justify-between bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition"
                         >
-                            {/* Header with filename and upload date */}
                             <div className="flex items-start justify-between mb-3">
                                 <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 truncate flex-1 mr-4">{item.filename}</h3>
                                 <span className="text-sm text-blue-800 dark:text-gray-400 flex-shrink-0">{formatDateTime(item.upload_date)}</span>
                             </div>
 
-                            {/* Description */}
-                            <div>
-                                <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-3 mb-4">{item.description || 'No description available.'}</p>
-                            </div>
+                            <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-3 mb-4">{item.description || 'No description available.'}</p>
 
-                            {/* Footer with tags and delete button */}
                             <div className="flex items-center justify-between">
-                                {/* Tags */}
                                 <div className="flex flex-wrap items-center gap-3 text-sm">
                                     <span className="px-2 py-1 rounded-md bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300 font-medium">{item.file_type.toUpperCase()}</span>
                                     <span className="px-2 py-1 rounded-md bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-300 font-medium">{item.category || 'N/A'}</span>
                                     <span className="px-2 py-1 rounded-md bg-pink-100 text-pink-700 dark:bg-pink-900 dark:text-pink-300 font-medium">{item.level || 'N/A'}</span>
                                 </div>
 
-                                {/* Delete button */}
                                 <button
                                     onClick={() => handleDelete(item.document_id, item.filename)}
                                     disabled={deletingId === item.document_id}
@@ -180,23 +162,32 @@ function TrainingHistory({
 export default function TrainingPage() {
     const [isOpen, setIsOpen] = useState(false);
     const [file, setFile] = useState<File | null>(null);
-
-    // Dropdown state
-    const [selectedTrainingType, setSelectedTrainingType] = useState('Internal'); // <-- level
+    const [selectedTrainingType, setSelectedTrainingType] = useState('Internal');
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [categoryList, setCategoryList] = useState<{ value: string; display_name: string }[]>([]);
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
 
-    // History state (lifted up)
     const [history, setHistory] = useState<any[]>([]);
     const [loadingHistory, setLoadingHistory] = useState(true);
     const [errorHistory, setErrorHistory] = useState<string | null>(null);
 
+    const [showConfirm, setShowConfirm] = useState(false);
+    const [confirmInput, setConfirmInput] = useState('');
+
+    const [alert, setAlert] = useState<{ show: boolean; type: 'success' | 'danger' | 'warning' | 'info'; message: string }>({
+        show: false,
+        type: 'info',
+        message: '',
+    });
+
     const modalRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Fetch categories
+    const showAlert = (type: 'success' | 'danger' | 'warning' | 'info', message: string) => {
+        setAlert({ show: true, type, message });
+    };
+
     useEffect(() => {
         const fetchCategories = async () => {
             setLoading(true);
@@ -216,7 +207,6 @@ export default function TrainingPage() {
         fetchCategories();
     }, []);
 
-    // Fetch training history
     const fetchHistory = async () => {
         try {
             setLoadingHistory(true);
@@ -235,31 +225,56 @@ export default function TrainingPage() {
         fetchHistory();
     }, []);
 
-    // Close modal when clicking outside
+    const handleUpload = async () => {
+        if (!file) return showAlert('danger', 'Please select a file first!');
+        if (!selectedCategory) return showAlert('warning', 'Please select a category!');
+
+        try {
+            setUploading(true);
+            const key = localStorage.getItem('x-encrypted-key');
+            if (!key) {
+                showAlert('danger', 'Missing encrypted key!');
+                return;
+            }
+
+            await uploadTrainingFile(file, key, selectedCategory, selectedTrainingType);
+
+            await fetchHistory();
+            showAlert('success', 'File uploaded successfully!');
+            setIsOpen(false);
+            setFile(null);
+        } catch (err: any) {
+            console.error(err);
+            showAlert('danger', 'Upload failed. ' + err.message);
+        } finally {
+            setUploading(false);
+        }
+    };
+
     useEffect(() => {
+        if (!isOpen || showConfirm) return;
         const handleClickOutside = (e: MouseEvent) => {
             if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
                 setIsOpen(false);
             }
         };
-        if (isOpen) {
-            document.addEventListener('mousedown', handleClickOutside);
-        }
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, [isOpen]);
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [isOpen, showConfirm]);
 
     return (
         <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
-            {/* Training history */}
-            <TrainingHistory setIsOpen={setIsOpen} history={history} loading={loadingHistory} error={errorHistory} refreshHistory={fetchHistory} />
+            {/* Global Alert */}
+            <div className="fixed top-5 left-1/2 transform -translate-x-1/2 z-[100] w-full max-w-md">
+                <Alert type={alert.type} message={alert.message} show={alert.show} onClose={() => setAlert({ ...alert, show: false })} />
+            </div>
 
-            {/* Modal */}
+            <TrainingHistory setIsOpen={setIsOpen} history={history} loading={loadingHistory} error={errorHistory} refreshHistory={fetchHistory} showAlert={showAlert} />
+
+            {/* Upload Modal */}
             {isOpen && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
                     <div ref={modalRef} className="bg-white dark:bg-gray-800 rounded-xl shadow-lg w-full max-w-2xl p-8 relative min-h-[500px]">
-                        {/* Close Icon */}
                         <button onClick={() => setIsOpen(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                             <X className="w-6 h-6" />
                         </button>
@@ -268,7 +283,6 @@ export default function TrainingPage() {
 
                         {/* Dropdowns */}
                         <div className="mt-6 flex gap-3">
-                            {/* Level Dropdown */}
                             <Dropdown
                                 button={
                                     <div className="flex items-center gap-1 px-3 py-2 text-sm border rounded-md bg-white shadow-sm hover:bg-gray-50">
@@ -288,7 +302,6 @@ export default function TrainingPage() {
                                 </ul>
                             </Dropdown>
 
-                            {/* Category Dropdown */}
                             <Dropdown
                                 button={
                                     <div className="flex items-center gap-1 px-3 py-2 text-sm border rounded-md bg-white shadow-sm hover:bg-gray-50">
@@ -315,7 +328,7 @@ export default function TrainingPage() {
                             </Dropdown>
                         </div>
 
-                        {/* File Upload Area */}
+                        {/* File Upload */}
                         <div
                             className="mt-6 flex flex-col items-center justify-center w-full h-72 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
                             onDragOver={(e) => e.preventDefault()}
@@ -344,40 +357,70 @@ export default function TrainingPage() {
                             )}
                         </div>
 
-                        {/* Buttons */}
+                        {/* Action Buttons */}
                         <div className="mt-8 flex justify-end">
                             <button
                                 disabled={uploading}
                                 onClick={async () => {
-                                    if (!file) return alert('Please select a file first!');
-                                    if (!selectedCategory) return alert('Please select a category!');
+                                    if (!file) return showAlert('danger', 'Please select a file first!');
+                                    if (!selectedCategory) return showAlert('warning', 'Please select a category!');
 
-                                    try {
-                                        setUploading(true);
-                                        const key = localStorage.getItem('x-encrypted-key');
-                                        if (!key) {
-                                            alert('Missing encrypted key!');
-                                            return;
-                                        }
-
-                                        await uploadTrainingFile(file, key, selectedCategory, selectedTrainingType);
-
-                                        // ✅ Refresh history immediately
-                                        await fetchHistory();
-
-                                        alert('File uploaded successfully!');
-                                        setIsOpen(false);
-                                        setFile(null);
-                                    } catch (err) {
-                                        console.error(err);
-                                        alert('Upload failed.');
-                                    } finally {
-                                        setUploading(false);
+                                    if (selectedTrainingType === 'Public') {
+                                        setShowConfirm(true);
+                                    } else {
+                                        await handleUpload();
                                     }
                                 }}
                                 className="px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium disabled:opacity-50"
                             >
                                 {uploading ? 'Uploading...' : 'Upload'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 🚨 Confirmation Modal */}
+            {showConfirm && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-[60]">
+                    <div className="bg-red-100 rounded-xl shadow-xl w-full max-w-md p-6 relative">
+                        <h3 className="text-lg font-bold text-red-900 mb-2">Do not share internal matters to public</h3>
+                        <p className="text-sm text-red-800 mb-4">
+                            Type <span className="font-semibold">&quot;allow&quot;</span> to continue.
+                        </p>
+
+                        <input
+                            type="text"
+                            value={confirmInput}
+                            onChange={(e) => setConfirmInput(e.target.value)}
+                            placeholder="Type here..."
+                            className="w-full px-3 py-2 rounded-lg border border-red-400 focus:ring-2 focus:ring-red-500 outline-none mb-6"
+                        />
+
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() => {
+                                    setShowConfirm(false);
+                                    setConfirmInput('');
+                                }}
+                                className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                disabled={confirmInput.toLowerCase() !== 'allow'}
+                                onClick={async () => {
+                                    if (confirmInput.toLowerCase() === 'allow') {
+                                        setShowConfirm(false);
+                                        setConfirmInput('');
+                                        await handleUpload();
+                                    }
+                                }}
+                                className={`px-4 py-2 rounded-lg font-medium text-white transition ${
+                                    confirmInput.toLowerCase() === 'allow' ? 'bg-red-600 hover:bg-red-700' : 'bg-red-400 cursor-not-allowed'
+                                }`}
+                            >
+                                Continue
                             </button>
                         </div>
                     </div>
