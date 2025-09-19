@@ -1,8 +1,10 @@
 // lib/training.ts
 
+const baseUrl = 'https://api02.awfatech.com/api/v1/llm';
+
 // Fetch training history
 export async function getTrainingHistory(encryptedKey: string | null) {
-    const res = await fetch('https://devapi02.awfatech.com/api/v1/llm/training-history', {
+    const res = await fetch(`${baseUrl}/training-history`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
@@ -39,7 +41,7 @@ export async function uploadTrainingFile(file: File, encryptedKey: string, categ
         }
     });
 
-    const res = await fetch('https://devapi02.awfatech.com/api/v1/llm/load-resources/files', {
+    const res = await fetch(`${baseUrl}/load-resources/files`, {
         method: 'POST',
         headers: {
             'x-encrypted-key': encryptedKey,
@@ -57,7 +59,7 @@ export async function uploadTrainingFile(file: File, encryptedKey: string, categ
 
 // Delete training document
 export async function deleteTrainingDocument(documentId: string, encryptedKey: string) {
-    const res = await fetch(`https://devapi02.awfatech.com/api/v1/llm/delete-document/${documentId}`, {
+    const res = await fetch(`${baseUrl}/delete-document/${documentId}`, {
         method: 'DELETE',
         headers: {
             'Content-Type': 'application/json',

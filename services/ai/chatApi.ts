@@ -1,35 +1,35 @@
 // services/ai/chatApi.ts
-import { fetchChatSessions } from './sidebar';
+import store from '@/store';
+const baseUrl = 'https://devapi02.awfatech.com/api/v1/llm';
 
 interface ChatRequest {
     message: string;
     session_id?: string;
-    level: string;
+    level?: string; // Made optional - will use Redux state if not provided
     max_results?: number;
     include_metadata?: boolean;
 }
 
+// 🚀 Main function to send chat messages with resources
 export const sendChatWithResources = async (payload: ChatRequest) => {
     const encryptedKey = localStorage.getItem('x-encrypted-key');
     if (!encryptedKey) throw new Error('Encrypted key missing');
 
-    // Restore session_id from localStorage if not provided
-    let sessionId = payload.session_id;
-    if (!sessionId) {
-        const storedSession = localStorage.getItem('session_id');
-        if (storedSession) {
-            sessionId = storedSession;
-        }
-    }
+    const state = store.getState();
 
-    // ✅ Restore chat level from localStorage or default to "public"
-    let chatLevel = localStorage.getItem('chat_level');
-    if (!chatLevel) {
-        chatLevel = 'public'; // default
-        localStorage.setItem('chat_level', chatLevel); // save default
-    }
+    // ✅ Always use Redux state as the source of truth, only override if explicitly provided
+    const chatLevel = payload.level ?? state.chat.chatLevel;
+    const sessionId = payload.session_id ?? state.chat.sessionId ?? '';
 
-    const url = 'https://devapi02.awfatech.com/api/v1/llm/chat-with-resources';
+    const url = `${baseUrl}/chat-with-resources`;
+
+    const requestBody = {
+        message: payload.message,
+        session_id: sessionId,
+        level: chatLevel, // This will always match the dropdown selection
+        max_results: payload.max_results ?? 5,
+        include_metadata: payload.include_metadata ?? false,
+    };
 
     const options: RequestInit = {
         method: 'POST',
@@ -37,28 +37,30 @@ export const sendChatWithResources = async (payload: ChatRequest) => {
             'Content-Type': 'application/json',
             'x-encrypted-key': encryptedKey,
         },
-        body: JSON.stringify({
-            message: payload.message,
-            session_id: sessionId ?? '',
-            level: chatLevel,
-            max_results: payload.max_results ?? 5,
-            include_metadata: payload.include_metadata ?? false,
-        }),
+        body: JSON.stringify(requestBody),
     };
+
+    console.log('📤 Sending chat request with level:', chatLevel);
+    console.log('📤 Full request body:', requestBody);
 
     const res = await fetch(url, options);
     if (!res.ok) throw new Error(`API Error: ${res.statusText}`);
-    console.log('Chat API Response (level):', chatLevel);
+
     return res.json();
 };
 
 // 🚀 For starting a new chat session (from Sidebar)
 export const startNewChatSession = async () => {
-    localStorage.removeItem('session_id'); // clear old session
+    localStorage.removeItem('session_id');
+
+    // ✅ Get current chat level from Redux instead of hardcoding
+    const state = store.getState();
+    const currentChatLevel = state.chat.chatLevel;
+
     return sendChatWithResources({
         message: '',
         session_id: '',
-        level: 'public',
+        level: currentChatLevel, // Use current dropdown selection
         max_results: 5,
         include_metadata: false,
     });
@@ -103,4 +105,18 @@ export const fetchChatSession = async (sessionId: string) => {
     }
 
     return { ...data, messages };
+};
+
+// 🚀 Helper function to get current chat level
+export const getCurrentChatLevel = () => {
+    const state = store.getState();
+    return state.chat.chatLevel;
+};
+
+// 🚀 Helper function to send message with current settings
+export const sendMessageWithCurrentSettings = async (message: string) => {
+    return sendChatWithResources({
+        message,
+        // Don't specify level - let it use Redux state automatically
+    });
 };

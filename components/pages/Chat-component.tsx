@@ -271,9 +271,44 @@ export default function ChatContent({ userName = 'User', isSidebarCollapsed }: C
                         {conversation.map((message, index) => (
                             <motion.div key={index} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
                                 <div className={`${message.role === 'user' ? 'text-right' : 'text-left'}`}>
-                                    <div className={`mb-2 inline-block max-w-full break-words ${message.role === 'gemini' ? 'prose dark:prose-invert max-w-none' : ''}`}>
-                                        {message.role === 'gemini' ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.text}</ReactMarkdown> : <p>{message.text}</p>}
-                                    </div>
+                                    {message.role === 'gemini' ? (
+                                        // ✅ AI message with gray background and padding
+                                        <div className="bg-gray-100 dark:bg-gray-800 rounded-xl p-4 mb-2">
+                                            <div className="prose dark:prose-invert max-w-none prose-sm">
+                                                <ReactMarkdown
+                                                    remarkPlugins={[remarkGfm]}
+                                                    components={{
+                                                        // Custom styling for markdown elements
+                                                        p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                                                        ul: ({ children }) => <ul className="mb-2 last:mb-0 pl-4">{children}</ul>,
+                                                        ol: ({ children }) => <ol className="mb-2 last:mb-0 pl-4">{children}</ol>,
+                                                        li: ({ children }) => <li className="mb-1">{children}</li>,
+                                                        h1: ({ children }) => <h1 className="text-lg font-bold mb-2">{children}</h1>,
+                                                        h2: ({ children }) => <h2 className="text-base font-semibold mb-2">{children}</h2>,
+                                                        h3: ({ children }) => <h3 className="text-sm font-medium mb-1">{children}</h3>,
+                                                        code: ({ children, className }) => {
+                                                            const isInline = !className?.includes('language-');
+                                                            return isInline ? (
+                                                                <code className="bg-gray-200 dark:bg-gray-700 px-1 py-0.5 rounded text-xs font-mono">{children}</code>
+                                                            ) : (
+                                                                <code className={className}>{children}</code>
+                                                            );
+                                                        },
+                                                        pre: ({ children }) => <pre className="bg-gray-200 dark:bg-gray-700 p-3 rounded-lg overflow-x-auto text-xs">{children}</pre>,
+                                                        blockquote: ({ children }) => <blockquote className="border-l-4 border-gray-300 dark:border-gray-600 pl-4 italic">{children}</blockquote>,
+                                                    }}
+                                                >
+                                                    {message.text}
+                                                </ReactMarkdown>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        // ✅ User message without background
+                                        <div className="mb-2">
+                                            <p className="inline-block max-w-full break-words">{message.text}</p>
+                                        </div>
+                                    )}
+
                                     {message.role === 'gemini' && (
                                         <div className="flex mt-2 space-x-3">
                                             <button onClick={() => handleCopy(message.text, index)} className="hover:scale-110 transition">
@@ -311,10 +346,12 @@ export default function ChatContent({ userName = 'User', isSidebarCollapsed }: C
                         ))}
                         {isLoading && (
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-start space-x-2 mt-2">
-                                <div className="px-4 py-2 rounded-md flex space-x-2">
-                                    <span className="w-2 h-2 rounded-full bg-gradient-to-r from-[#0046FF] to-[#FF3B3F] animate-pulse" />
-                                    <span className="w-2 h-2 rounded-full bg-gradient-to-r from-[#0046FF] to-[#FF3B3F] animate-pulse" style={{ animationDelay: '200ms' }} />
-                                    <span className="w-2 h-2 rounded-full bg-gradient-to-r from-[#0046FF] to-[#FF3B3F] animate-pulse" style={{ animationDelay: '400ms' }} />
+                                <div className="dark:bg-gray-800 rounded-xl p-4">
+                                    <div className="flex space-x-2">
+                                        <span className="w-2 h-2 rounded-full bg-gradient-to-r from-[#0046FF] to-[#FF3B3F] animate-pulse" />
+                                        <span className="w-2 h-2 rounded-full bg-gradient-to-r from-[#0046FF] to-[#FF3B3F] animate-pulse" style={{ animationDelay: '200ms' }} />
+                                        <span className="w-2 h-2 rounded-full bg-gradient-to-r from-[#0046FF] to-[#FF3B3F] animate-pulse" style={{ animationDelay: '400ms' }} />
+                                    </div>
                                 </div>
                             </motion.div>
                         )}

@@ -1,12 +1,18 @@
-import { combineReducers, configureStore } from '@reduxjs/toolkit';
-import themeConfigSlice from '@/store/themeConfigSlice';
+// store/index.ts
+import { configureStore, combineReducers } from '@reduxjs/toolkit';
+import chatReducer from './chatSlice';
+import themeConfigReducer from './themeConfigSlice';
 
 const rootReducer = combineReducers({
-    themeConfig: themeConfigSlice,
+    chat: chatReducer,
+    themeConfig: themeConfigReducer,
 });
 
-export default configureStore({
+export const store = configureStore({
     reducer: rootReducer,
 });
 
-export type IRootState = ReturnType<typeof rootReducer>;
+export type RootState = ReturnType<typeof store.getState>;
+export type AppDispatch = typeof store.dispatch;
+
+export default store;

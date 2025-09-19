@@ -4,6 +4,9 @@ import React, { useState, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
 import Dropdown from '../dropdown';
 import { usePersonalityContext } from '@/context/PersonalityContext';
+import { useSelector, useDispatch } from 'react-redux';
+import { setChatLevel, initializeChatState } from '@/store/chatSlice';
+import { RootState } from '@/store';
 
 interface HeaderProps {
     isCollapsed: boolean;
@@ -11,33 +14,29 @@ interface HeaderProps {
 }
 
 export default function Header({ isCollapsed, activeItem }: HeaderProps) {
-    const { refreshExpertise } = usePersonalityContext();
+    const { refreshExpertise, currentExpertiseData } = usePersonalityContext();
+    const dispatch = useDispatch();
+    const chatLevel = useSelector((state: RootState) => state.chat.chatLevel);
 
     const [selectedExpertise, setSelectedExpertise] = useState<string | null>(null);
-    const [selectedChatOption, setSelectedChatOption] = useState<string>('Internal');
-    const [selectedTrainingType, setSelectedTrainingType] = useState<string>('Internal');
     const [expertiseList, setExpertiseList] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
 
     const capitalize = (str: string) => (str ? str.charAt(0).toUpperCase() + str.slice(1) : '');
 
-    // ----------------- ✅ Sync Chat Level with localStorage -----------------
+    // ✅ Initialize chat state from localStorage on mount
     useEffect(() => {
-        const storedChatLevel = localStorage.getItem('chat_level') || 'internal';
-        setSelectedChatOption(capitalize(storedChatLevel));
+        dispatch(initializeChatState());
+    }, [dispatch]);
 
-        // Listen for localStorage changes (e.g., manual edit in DevTools)
-        const handleStorageChange = () => {
-            const updatedLevel = localStorage.getItem('chat_level') || 'internal';
-            setSelectedChatOption(capitalize(updatedLevel));
-        };
-
-        window.addEventListener('storage', handleStorageChange);
-        return () => {
-            window.removeEventListener('storage', handleStorageChange);
-        };
-    }, []);
-    // -----------------------------------------------------------------------
+    // ✅ Sync dropdown with current expertise data from context
+    useEffect(() => {
+        if (currentExpertiseData?.current_expertise) {
+            const currentExpertise = capitalize(currentExpertiseData.current_expertise);
+            setSelectedExpertise(currentExpertise);
+            console.log('🔄 Synced dropdown with current expertise:', currentExpertise);
+        }
+    }, [currentExpertiseData]);
 
     // ----------------- Load Expertise List -----------------
     useEffect(() => {
@@ -52,20 +51,19 @@ export default function Header({ isCollapsed, activeItem }: HeaderProps) {
                 if (data.success && Array.isArray(data.data)) {
                     setExpertiseList(data.data);
 
-                    const storedExpertise = localStorage.getItem('selected_expertise');
-
-                    if (storedExpertise) {
-                        setSelectedExpertise(capitalize(storedExpertise));
+                    // ✅ Use context data as the primary source of truth
+                    if (currentExpertiseData?.current_expertise) {
+                        setSelectedExpertise(capitalize(currentExpertiseData.current_expertise));
                     } else {
+                        // Fallback to API response if context is not available yet
                         const defaultOption = data.current_expertise ? capitalize(data.current_expertise) : capitalize(data.data[0]);
                         setSelectedExpertise(defaultOption);
-                        localStorage.setItem('selected_expertise', defaultOption.toLowerCase());
                     }
                 } else {
                     setExpertiseList([]);
                 }
             } catch (err) {
-                console.error(err);
+                console.error('❌ Error fetching expertise list:', err);
                 setExpertiseList([]);
             } finally {
                 setLoading(false);
@@ -73,13 +71,14 @@ export default function Header({ isCollapsed, activeItem }: HeaderProps) {
         };
 
         fetchExpertise();
-    }, [activeItem]);
-    // -------------------------------------------------------
+    }, [activeItem, currentExpertiseData]);
 
     // ----------------- Handle Personality Expertise -----------------
     const handleExpertiseSelect = async (option: string) => {
+        console.log('🔄 Changing expertise from', selectedExpertise, 'to', option);
+
+        // Optimistically update the UI
         setSelectedExpertise(option);
-        localStorage.setItem('selected_expertise', option.toLowerCase());
 
         try {
             const encryptedKey = localStorage.getItem('x-encrypted-key');
@@ -99,12 +98,35 @@ export default function Header({ isCollapsed, activeItem }: HeaderProps) {
                 throw new Error(res.message || 'Failed to change expertise');
             }
 
+            console.log('✅ Expertise changed successfully to:', option);
+
+            // ✅ Notify other components about the expertise change
+            window.dispatchEvent(
+                new CustomEvent('expertiseChanged', {
+                    detail: { expertise: option.toLowerCase() },
+                }),
+            );
+
+            // ✅ Refresh the personality context to sync with PersonalContent
             await refreshExpertise();
+
+            console.log('✅ Personality context refreshed and components notified');
         } catch (err) {
-            console.error('Error changing expertise:', err);
+            console.error('❌ Error changing expertise:', err);
+
+            // Revert the optimistic update on error
+            if (currentExpertiseData?.current_expertise) {
+                setSelectedExpertise(capitalize(currentExpertiseData.current_expertise));
+            }
         }
     };
-    // -------------------------------------------------------
+
+    // ✅ Handle chat level selection with better logging
+    const handleChatLevelSelect = (option: string) => {
+        const lowercaseOption = option.toLowerCase();
+        console.log('🔄 Updating chat level from', chatLevel, 'to', lowercaseOption);
+        dispatch(setChatLevel(lowercaseOption));
+    };
 
     // ----------------- Dropdown Renderer -----------------
     const renderDropdown = () => {
@@ -113,7 +135,7 @@ export default function Header({ isCollapsed, activeItem }: HeaderProps) {
                 <Dropdown
                     button={
                         <div className="flex items-center gap-1 px-3 py-1.5 text-sm border rounded-md bg-white shadow-sm hover:bg-gray-50">
-                            <span>{selectedExpertise ? capitalize(selectedExpertise) : 'Select Expertise'}</span>
+                            <span>{selectedExpertise ? selectedExpertise : 'Select Expertise'}</span>
                             <ChevronDown className="w-4 h-4" />
                         </div>
                     }
@@ -124,13 +146,17 @@ export default function Header({ isCollapsed, activeItem }: HeaderProps) {
                         ) : expertiseList.length ? (
                             expertiseList.map((item) => {
                                 const capitalizedItem = capitalize(item);
+                                const isSelected = selectedExpertise === capitalizedItem;
                                 return (
                                     <li key={item}>
                                         <button
                                             onClick={() => handleExpertiseSelect(capitalizedItem)}
-                                            className={`block w-full px-4 py-2 text-left hover:bg-gray-100 ${selectedExpertise === capitalizedItem ? 'bg-gray-100 font-semibold' : ''}`}
+                                            className={`block w-full px-4 py-2 text-left hover:bg-gray-100 transition-colors ${
+                                                isSelected ? 'bg-indigo-50 border-l-2 border-indigo-500 font-semibold text-indigo-700' : ''
+                                            }`}
                                         >
                                             {capitalizedItem}
+                                            {isSelected && <span className="ml-2 text-xs text-indigo-500">✓</span>}
                                         </button>
                                     </li>
                                 );
@@ -149,7 +175,7 @@ export default function Header({ isCollapsed, activeItem }: HeaderProps) {
                 <Dropdown
                     button={
                         <div className="flex items-center gap-1 px-3 py-1.5 text-sm border rounded-md bg-white shadow-sm hover:bg-gray-50">
-                            <span>{selectedChatOption}</span>
+                            <span>{capitalize(chatLevel)}</span>
                             <ChevronDown className="w-4 h-4" />
                         </div>
                     }
@@ -158,11 +184,8 @@ export default function Header({ isCollapsed, activeItem }: HeaderProps) {
                         {chatOptions.map((item) => (
                             <li key={item}>
                                 <button
-                                    onClick={() => {
-                                        setSelectedChatOption(item);
-                                        localStorage.setItem('chat_level', item.toLowerCase());
-                                    }}
-                                    className={`block w-full px-4 py-2 text-left hover:bg-gray-100 ${selectedChatOption === item ? 'bg-gray-100 font-semibold' : ''}`}
+                                    onClick={() => handleChatLevelSelect(item)}
+                                    className={`block w-full px-4 py-2 text-left hover:bg-gray-100 ${chatLevel === item.toLowerCase() ? 'bg-gray-100 font-semibold' : ''}`}
                                 >
                                     {item}
                                 </button>
@@ -174,12 +197,18 @@ export default function Header({ isCollapsed, activeItem }: HeaderProps) {
         }
 
         if (activeItem === 'Training') {
-            return <div className="text-sm font-medium text-gray-700">Training Mode: {selectedTrainingType}</div>;
+            return <div className="text-sm font-medium text-gray-700">Training Mode: Internal</div>;
         }
 
         return null;
     };
-    // -------------------------------------------------------
+
+    // ✅ Debug info (remove in production)
+    useEffect(() => {
+        console.log('🎯 Current chat level in header:', chatLevel);
+        console.log('🎯 Current selected expertise:', selectedExpertise);
+        console.log('🎯 Context expertise data:', currentExpertiseData?.current_expertise);
+    }, [chatLevel, selectedExpertise, currentExpertiseData]);
 
     return (
         <header

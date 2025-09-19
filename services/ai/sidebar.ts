@@ -21,7 +21,7 @@ export const fetchChatSessions = async (): Promise<ChatSession[]> => {
     const encryptedKey = localStorage.getItem('x-encrypted-key');
     if (!encryptedKey) throw new Error('Encrypted key missing');
 
-    const url = 'https://devapi02.awfatech.com/api/v1/llm/chat-sessions';
+    const url = 'https://api02.awfatech.com/api/v1/llm/chat-sessions';
 
     const response = await fetch(url, {
         method: 'GET',
