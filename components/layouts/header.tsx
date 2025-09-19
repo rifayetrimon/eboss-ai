@@ -6,7 +6,7 @@ import Dropdown from '../dropdown';
 import { usePersonalityContext } from '@/context/PersonalityContext';
 import { useSelector, useDispatch } from 'react-redux';
 import { setChatLevel, initializeChatState } from '@/store/chatSlice';
-import { RootState } from '@/store';
+import { IRootState } from '@/store';
 
 interface HeaderProps {
     isCollapsed: boolean;
@@ -16,7 +16,7 @@ interface HeaderProps {
 export default function Header({ isCollapsed, activeItem }: HeaderProps) {
     const { refreshExpertise, currentExpertiseData } = usePersonalityContext();
     const dispatch = useDispatch();
-    const chatLevel = useSelector((state: RootState) => state.chat.chatLevel);
+    const chatLevel = useSelector((state: IRootState) => state.chat.chatLevel);
 
     const [selectedExpertise, setSelectedExpertise] = useState<string | null>(null);
     const [expertiseList, setExpertiseList] = useState<string[]>([]);

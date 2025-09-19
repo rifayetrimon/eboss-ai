@@ -29,7 +29,7 @@ import IconThumbUp from '@/components/icon/icon-thumb-up';
 import IconTrendingUp from '@/components/icon/icon-trending-up';
 import IconUser from '@/components/icon/icon-user';
 import IconUsersGroup from '@/components/icon/icon-users-group';
-import { RootState } from '@/store';
+import { IRootState } from '@/store';
 import Link from 'next/link';
 import Image from 'next/image';
 import React, { useEffect, useState } from 'react';
@@ -39,8 +39,8 @@ import { basePath } from '@/lib/basePath';
 import PerfectScrollbar from 'react-perfect-scrollbar';
 
 const ComponentsWidgets = () => {
-    const isDark = useSelector((state: RootState) => state.themeConfig.theme === 'dark' || state.themeConfig.isDarkMode);
-    const isRtl = useSelector((state: RootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+    const isDark = useSelector((state: IRootState) => state.themeConfig.theme === 'dark' || state.themeConfig.isDarkMode);
+    const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const [isMounted, setIsMounted] = useState(false);
     useEffect(() => {
