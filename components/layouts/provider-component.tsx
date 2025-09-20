@@ -3,7 +3,7 @@
 import App from '@/App';
 import store from '@/store';
 import { Provider } from 'react-redux';
-import React, { ReactNode, Suspense } from 'react';
+import React, { ReactNode, Suspense, useState, useEffect } from 'react';
 import { appWithI18Next } from 'ni18n';
 import { ni18nConfig } from 'ni18n.config.ts';
 import Loading from '@/components/layouts/loading';
@@ -16,10 +16,23 @@ interface IProps {
 }
 
 const ProviderComponent = ({ children }: IProps) => {
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
+    // Use your existing Loading component instead of custom loader
+    if (!isMounted) {
+        return <Loading />; // Your existing loader component
+    }
+
     return (
         <Provider store={store}>
             <QueryClientProvider client={queryClient}>
                 <Suspense fallback={<Loading />}>
+                    {' '}
+                    {/* Your existing loader */}
                     <App>{children}</App>
                 </Suspense>
             </QueryClientProvider>
@@ -28,5 +41,3 @@ const ProviderComponent = ({ children }: IProps) => {
 };
 
 export default ProviderComponent;
-// todo
-// export default appWithI18Next(ProviderComponent, ni18nConfig);
