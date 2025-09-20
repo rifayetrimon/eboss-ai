@@ -168,9 +168,9 @@ export default function Header({ isCollapsed, activeItem }: HeaderProps) {
             );
         }
 
-        if (activeItem === 'Training') {
-            return <div className="text-sm font-medium text-gray-700">Training Mode: Internal</div>;
-        }
+        // if (activeItem === 'Training') {
+        //     return <div className="text-sm font-medium text-gray-700">Training Mode: Internal</div>;
+        // }
 
         return null;
     };
