@@ -26,7 +26,6 @@ export default function Sidebar({ onCollapseChange, activeItem, setActiveItem }:
     const { data } = useProfile();
     const sidebarRef = useRef<HTMLDivElement>(null);
 
-
     const [sessions, setSessions] = useState<ChatSession[]>([]);
     const [loading, setLoading] = useState(false);
 
