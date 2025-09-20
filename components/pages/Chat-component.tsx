@@ -10,6 +10,8 @@ import PinIcon from '@/components/icon/ai/icon-pin';
 import { sendChatWithResources, fetchChatSession } from '@/services/ai/chatApi';
 import { fetchChatSessions } from '@/services/ai/sidebar';
 import Loading from '../layouts/loading';
+import { useSelector } from 'react-redux';
+import { IRootState } from '@/store';
 
 interface ChatContentProps {
     userName?: string;
@@ -27,6 +29,30 @@ export default function ChatContent({ userName = 'User', isSidebarCollapsed }: C
 
     const inputRef = useRef<HTMLTextAreaElement | null>(null);
     const chatContainerRef = useRef<HTMLDivElement | null>(null);
+
+    // ✅ Get current chat level from Redux
+    const chatLevel = useSelector((state: IRootState) => state.chat.chatLevel);
+
+    // ✅ Track current level for immediate use after dropdown changes
+    const [currentLevel, setCurrentLevel] = useState(chatLevel);
+
+    // ✅ Listen for chat level changes from header dropdown
+    useEffect(() => {
+        const handleChatLevelChange = (event: CustomEvent) => {
+            const { newLevel } = event.detail;
+            setCurrentLevel(newLevel);
+            console.log('📢 Chat component received level change:', newLevel);
+        };
+
+        window.addEventListener('chatLevelChanged', handleChatLevelChange as EventListener);
+        return () => window.removeEventListener('chatLevelChanged', handleChatLevelChange as EventListener);
+    }, []);
+
+    // ✅ Sync with Redux state changes
+    useEffect(() => {
+        setCurrentLevel(chatLevel);
+        console.log('🔍 Chat component: Redux chatLevel updated to:', chatLevel);
+    }, [chatLevel]);
 
     // ✅ Load conversation logic (unchanged)
     const loadConversation = async (sessionId?: string) => {
@@ -115,6 +141,7 @@ export default function ChatContent({ userName = 'User', isSidebarCollapsed }: C
         return () => window.removeEventListener('newChatStarted', resetChat);
     }, []);
 
+    // ✅ Fixed handleSendMessage to use current level
     const handleSendMessage = async (message?: string) => {
         const userMessage = message ?? inputValue.trim();
         if (!userMessage) return;
@@ -127,10 +154,14 @@ export default function ChatContent({ userName = 'User', isSidebarCollapsed }: C
 
         try {
             const sessionId = localStorage.getItem('session_id') || '';
+
+            console.log('🚀 Sending message with level:', currentLevel);
+
+            // ✅ Use currentLevel instead of hardcoded 'public'
             const data = await sendChatWithResources({
                 message: userMessage,
                 session_id: sessionId,
-                level: 'public',
+                level: currentLevel, // ✅ This now uses the dropdown selection
                 max_results: 5,
                 include_metadata: false,
             });

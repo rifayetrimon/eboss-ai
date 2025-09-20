@@ -16,6 +16,7 @@ function TrainingHistory({
     error,
     refreshHistory,
     showAlert,
+    setDeleteConfirm,
 }: {
     setIsOpen: (v: boolean) => void;
     history: any[];
@@ -23,30 +24,13 @@ function TrainingHistory({
     error: string | null;
     refreshHistory: () => Promise<void>;
     showAlert: (type: 'success' | 'danger' | 'warning' | 'info', message: string) => void;
+    setDeleteConfirm: (data: { show: boolean; documentId: string; filename: string }) => void;
 }) {
     const [deletingId, setDeletingId] = useState<string | null>(null);
 
     const handleDelete = async (documentId: string, filename: string) => {
-        if (!confirm(`Are you sure you want to delete "${filename}"?`)) return;
-
-        try {
-            const key = localStorage.getItem('x-encrypted-key');
-            if (!key) {
-                showAlert('danger', 'Missing encrypted key!');
-                return;
-            }
-
-            setDeletingId(documentId);
-            await deleteTrainingDocument(documentId, key);
-
-            showAlert('success', `"${filename}" deleted successfully`);
-            await refreshHistory();
-        } catch (err: any) {
-            console.error(err);
-            showAlert('danger', `Failed to delete: ${err.message}`);
-        } finally {
-            setDeletingId(null);
-        }
+        // Show confirmation modal instead of browser confirm
+        setDeleteConfirm({ show: true, documentId, filename });
     };
 
     return (
@@ -73,10 +57,6 @@ function TrainingHistory({
                         >
                             <div className="flex items-start justify-between mb-3">
                                 <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 truncate flex-1 mr-4">{item.filename}</h3>
-                                {/* <span className="text-sm text-blue-800 dark:text-gray-400 flex-shrink-0">
-                                    {item.upload_date}
-                                    {item.upload_time}
-                                </span> */}
                                 <div className="text-right text-sm text-blue-800 dark:text-gray-400 flex-shrink-0">
                                     <div>{item.upload_date}</div>
                                     <div>{item.upload_time}</div>
@@ -143,6 +123,18 @@ export default function TrainingPage() {
     const [showConfirm, setShowConfirm] = useState(false);
     const [confirmInput, setConfirmInput] = useState('');
 
+    // Delete confirmation state
+    const [deleteConfirm, setDeleteConfirm] = useState<{
+        show: boolean;
+        documentId: string;
+        filename: string;
+    }>({
+        show: false,
+        documentId: '',
+        filename: '',
+    });
+    const [deleting, setDeleting] = useState(false);
+
     const [alert, setAlert] = useState<{ show: boolean; type: 'success' | 'danger' | 'warning' | 'info'; message: string }>({
         show: false,
         type: 'info',
@@ -154,6 +146,31 @@ export default function TrainingPage() {
 
     const showAlert = (type: 'success' | 'danger' | 'warning' | 'info', message: string) => {
         setAlert({ show: true, type, message });
+    };
+
+    // Handle actual delete after confirmation
+    const handleConfirmDelete = async () => {
+        try {
+            const key = localStorage.getItem('x-encrypted-key');
+            if (!key) {
+                showAlert('danger', 'Missing encrypted key!');
+                return;
+            }
+
+            setDeleting(true);
+            await deleteTrainingDocument(deleteConfirm.documentId, key);
+
+            showAlert('success', `"${deleteConfirm.filename}" deleted successfully`);
+            await fetchHistory();
+
+            // Reset delete confirmation state
+            setDeleteConfirm({ show: false, documentId: '', filename: '' });
+        } catch (err: any) {
+            console.error(err);
+            showAlert('danger', `Failed to delete: ${err.message}`);
+        } finally {
+            setDeleting(false);
+        }
     };
 
     useEffect(() => {
@@ -220,7 +237,7 @@ export default function TrainingPage() {
     };
 
     useEffect(() => {
-        if (!isOpen || showConfirm) return;
+        if (!isOpen || showConfirm || deleteConfirm.show) return;
         const handleClickOutside = (e: MouseEvent) => {
             if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
                 setIsOpen(false);
@@ -228,7 +245,7 @@ export default function TrainingPage() {
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [isOpen, showConfirm]);
+    }, [isOpen, showConfirm, deleteConfirm.show]);
 
     return (
         <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
@@ -237,7 +254,15 @@ export default function TrainingPage() {
                 <Alert type={alert.type} message={alert.message} show={alert.show} onClose={() => setAlert({ ...alert, show: false })} />
             </div>
 
-            <TrainingHistory setIsOpen={setIsOpen} history={history} loading={loadingHistory} error={errorHistory} refreshHistory={fetchHistory} showAlert={showAlert} />
+            <TrainingHistory
+                setIsOpen={setIsOpen}
+                history={history}
+                loading={loadingHistory}
+                error={errorHistory}
+                refreshHistory={fetchHistory}
+                showAlert={showAlert}
+                setDeleteConfirm={setDeleteConfirm}
+            />
 
             {/* Upload Modal */}
             {isOpen && (
@@ -348,22 +373,12 @@ export default function TrainingPage() {
                 </div>
             )}
 
-            {/* 🚨 Confirmation Modal */}
+            {/* Public Upload Confirmation Modal */}
             {showConfirm && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-[60]">
                     <div className="bg-red-100 rounded-xl shadow-xl w-full max-w-md p-6 relative">
-                        <h3 className="text-lg font-bold text-red-900 mb-2">Do not share internal matters to public</h3>
-                        <p className="text-sm text-red-800 mb-4">
-                            Type <span className="font-semibold">&quot;allow&quot;</span> to continue.
-                        </p>
-
-                        <input
-                            type="text"
-                            value={confirmInput}
-                            onChange={(e) => setConfirmInput(e.target.value)}
-                            placeholder="Type here..."
-                            className="w-full px-3 py-2 rounded-lg border border-red-400 focus:ring-2 focus:ring-red-500 outline-none mb-6"
-                        />
+                        <h3 className="text-lg font-bold text-red-900 mb-2">Do not share this file&apos;s contents with the public</h3>
+                        <p className="text-sm text-red-800 mb-6">Are you sure you want to make this file public?</p>
 
                         <div className="flex justify-end gap-3">
                             <button
@@ -376,19 +391,45 @@ export default function TrainingPage() {
                                 Cancel
                             </button>
                             <button
-                                disabled={confirmInput.toLowerCase() !== 'allow'}
                                 onClick={async () => {
-                                    if (confirmInput.toLowerCase() === 'allow') {
-                                        setShowConfirm(false);
-                                        setConfirmInput('');
-                                        await handleUpload();
-                                    }
+                                    setShowConfirm(false);
+                                    setConfirmInput('');
+                                    await handleUpload();
                                 }}
-                                className={`px-4 py-2 rounded-lg font-medium text-white transition ${
-                                    confirmInput.toLowerCase() === 'allow' ? 'bg-red-600 hover:bg-red-700' : 'bg-red-400 cursor-not-allowed'
-                                }`}
+                                className="px-4 py-2 rounded-lg font-medium text-white bg-red-600 hover:bg-red-700 transition"
                             >
-                                Continue
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {deleteConfirm.show && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-[60]">
+                    <div className="bg-red-100 rounded-xl shadow-xl w-full max-w-md p-6 relative">
+                        <h3 className="text-lg font-bold text-red-900 mb-2">Delete Training File</h3>
+                        <p className="text-sm text-red-800 mb-6">
+                            Are you sure you want to delete <span className="font-semibold">&quot;{deleteConfirm.filename}&quot;</span>?
+                        </p>
+
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() => {
+                                    setDeleteConfirm({ show: false, documentId: '', filename: '' });
+                                }}
+                                className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium"
+                                disabled={deleting}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                disabled={deleting}
+                                onClick={handleConfirmDelete}
+                                className="px-4 py-2 rounded-lg font-medium text-white bg-red-600 hover:bg-red-700 transition disabled:bg-red-400 disabled:cursor-not-allowed"
+                            >
+                                {deleting ? 'Deleting...' : 'Confirm'}
                             </button>
                         </div>
                     </div>

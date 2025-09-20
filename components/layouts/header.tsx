@@ -1,3 +1,4 @@
+// components/layouts/Header.tsx
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -24,6 +25,12 @@ export default function Header({ isCollapsed, activeItem }: HeaderProps) {
 
     const capitalize = (str: string) => (str ? str.charAt(0).toUpperCase() + str.slice(1) : '');
 
+    // ✅ Chat options for consistency
+    const chatOptions = [
+        { label: 'Internal', value: 'internal' },
+        { label: 'Public', value: 'public' },
+    ];
+
     // ✅ Initialize chat state from localStorage on mount
     useEffect(() => {
         dispatch(initializeChatState());
@@ -34,7 +41,6 @@ export default function Header({ isCollapsed, activeItem }: HeaderProps) {
         if (currentExpertiseData?.current_expertise) {
             const currentExpertise = capitalize(currentExpertiseData.current_expertise);
             setSelectedExpertise(currentExpertise);
-            console.log('🔄 Synced dropdown with current expertise:', currentExpertise);
         }
     }, [currentExpertiseData]);
 
@@ -51,11 +57,9 @@ export default function Header({ isCollapsed, activeItem }: HeaderProps) {
                 if (data.success && Array.isArray(data.data)) {
                     setExpertiseList(data.data);
 
-                    // ✅ Use context data as the primary source of truth
                     if (currentExpertiseData?.current_expertise) {
                         setSelectedExpertise(capitalize(currentExpertiseData.current_expertise));
                     } else {
-                        // Fallback to API response if context is not available yet
                         const defaultOption = data.current_expertise ? capitalize(data.current_expertise) : capitalize(data.data[0]);
                         setSelectedExpertise(defaultOption);
                     }
@@ -75,9 +79,6 @@ export default function Header({ isCollapsed, activeItem }: HeaderProps) {
 
     // ----------------- Handle Personality Expertise -----------------
     const handleExpertiseSelect = async (option: string) => {
-        console.log('🔄 Changing expertise from', selectedExpertise, 'to', option);
-
-        // Optimistically update the UI
         setSelectedExpertise(option);
 
         try {
@@ -98,35 +99,39 @@ export default function Header({ isCollapsed, activeItem }: HeaderProps) {
                 throw new Error(res.message || 'Failed to change expertise');
             }
 
-            console.log('✅ Expertise changed successfully to:', option);
+            // ✅ Notify components
+            window.dispatchEvent(new CustomEvent('expertiseChanged', { detail: { expertise: option.toLowerCase() } }));
 
-            // ✅ Notify other components about the expertise change
-            window.dispatchEvent(
-                new CustomEvent('expertiseChanged', {
-                    detail: { expertise: option.toLowerCase() },
-                }),
-            );
-
-            // ✅ Refresh the personality context to sync with PersonalContent
             await refreshExpertise();
-
-            console.log('✅ Personality context refreshed and components notified');
         } catch (err) {
             console.error('❌ Error changing expertise:', err);
-
-            // Revert the optimistic update on error
             if (currentExpertiseData?.current_expertise) {
                 setSelectedExpertise(capitalize(currentExpertiseData.current_expertise));
             }
         }
     };
 
-    // ✅ Handle chat level selection with better logging
-    const handleChatLevelSelect = (option: string) => {
-        const lowercaseOption = option.toLowerCase();
-        console.log('🔄 Updating chat level from', chatLevel, 'to', lowercaseOption);
-        dispatch(setChatLevel(lowercaseOption));
+    // ✅ Enhanced chat level handler with immediate notification
+    const handleChatLevelSelect = (value: string) => {
+        console.log('🔄 Changing chat level from', chatLevel, 'to', value);
+
+        // ✅ Update Redux state
+        dispatch(setChatLevel(value));
+
+        // ✅ Notify other components immediately about the change
+        window.dispatchEvent(
+            new CustomEvent('chatLevelChanged', {
+                detail: { newLevel: value, oldLevel: chatLevel },
+            }),
+        );
+
+        console.log('✅ Chat level set to:', value);
     };
+
+    // ✅ Debug current state
+    useEffect(() => {
+        console.log('🔍 Header: Current chatLevel in state:', chatLevel);
+    }, [chatLevel]);
 
     // ----------------- Dropdown Renderer -----------------
     const renderDropdown = () => {
@@ -140,7 +145,7 @@ export default function Header({ isCollapsed, activeItem }: HeaderProps) {
                         </div>
                     }
                 >
-                    <ul className="w-40 bg-white border rounded-md shadow-lg max-h-60 overflow-y-auto py-1 text-sm text-gray-700">
+                    <ul className="w-44 bg-white border rounded-md shadow-lg max-h-60 overflow-y-auto py-1 text-sm text-gray-700">
                         {loading ? (
                             <li className="px-4 py-2 text-gray-500">Loading...</li>
                         ) : expertiseList.length ? (
@@ -151,12 +156,12 @@ export default function Header({ isCollapsed, activeItem }: HeaderProps) {
                                     <li key={item}>
                                         <button
                                             onClick={() => handleExpertiseSelect(capitalizedItem)}
-                                            className={`block w-full px-4 py-2 text-left hover:bg-gray-100 transition-colors ${
+                                            className={`flex w-full items-center justify-between px-4 py-2 text-left hover:bg-gray-100 transition-colors ${
                                                 isSelected ? 'bg-indigo-50 border-l-2 border-indigo-500 font-semibold text-indigo-700' : ''
                                             }`}
                                         >
-                                            {capitalizedItem}
-                                            {isSelected && <span className="ml-2 text-xs text-indigo-500">✓</span>}
+                                            <span>{capitalizedItem}</span>
+                                            {isSelected && <span className="text-xs text-indigo-500">✓</span>}
                                         </button>
                                     </li>
                                 );
@@ -170,27 +175,36 @@ export default function Header({ isCollapsed, activeItem }: HeaderProps) {
         }
 
         if (activeItem === 'Chat') {
-            const chatOptions = ['Internal', 'Public'];
+            // ✅ Get current label for proper display
+            const currentOption = chatOptions.find((opt) => opt.value === chatLevel);
+            const displayLabel = currentOption?.label || 'Public';
+
             return (
                 <Dropdown
                     button={
                         <div className="flex items-center gap-1 px-3 py-1.5 text-sm border rounded-md bg-white shadow-sm hover:bg-gray-50">
-                            <span>{capitalize(chatLevel)}</span>
+                            <span>{displayLabel}</span>
                             <ChevronDown className="w-4 h-4" />
                         </div>
                     }
                 >
-                    <ul className="w-40 bg-white border rounded-md shadow-lg py-1 text-sm text-gray-700">
-                        {chatOptions.map((item) => (
-                            <li key={item}>
-                                <button
-                                    onClick={() => handleChatLevelSelect(item)}
-                                    className={`block w-full px-4 py-2 text-left hover:bg-gray-100 ${chatLevel === item.toLowerCase() ? 'bg-gray-100 font-semibold' : ''}`}
-                                >
-                                    {item}
-                                </button>
-                            </li>
-                        ))}
+                    <ul className="w-44 bg-white border rounded-md shadow-lg py-1 text-sm text-gray-700">
+                        {chatOptions.map((opt) => {
+                            const isSelected = chatLevel === opt.value;
+                            return (
+                                <li key={opt.value}>
+                                    <button
+                                        onClick={() => handleChatLevelSelect(opt.value)}
+                                        className={`flex w-full items-center justify-between px-4 py-2 text-left hover:bg-gray-100 transition-colors ${
+                                            isSelected ? 'bg-indigo-50 border-l-2 border-indigo-500 font-semibold text-indigo-700' : ''
+                                        }`}
+                                    >
+                                        <span>{opt.label}</span>
+                                        {isSelected && <span className="text-xs text-indigo-500">✓</span>}
+                                    </button>
+                                </li>
+                            );
+                        })}
                     </ul>
                 </Dropdown>
             );
@@ -202,13 +216,6 @@ export default function Header({ isCollapsed, activeItem }: HeaderProps) {
 
         return null;
     };
-
-    // ✅ Debug info (remove in production)
-    useEffect(() => {
-        console.log('🎯 Current chat level in header:', chatLevel);
-        console.log('🎯 Current selected expertise:', selectedExpertise);
-        console.log('🎯 Context expertise data:', currentExpertiseData?.current_expertise);
-    }, [chatLevel, selectedExpertise, currentExpertiseData]);
 
     return (
         <header

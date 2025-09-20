@@ -10,9 +10,10 @@ interface ChatState {
 const getInitialChatLevel = (): string => {
     if (typeof window !== 'undefined') {
         const saved = localStorage.getItem('chatLevel');
-        return saved || 'internal';
+        // 👇 fallback to "public" instead of "internal"
+        return saved || 'public';
     }
-    return 'internal';
+    return 'public';
 };
 
 const initialState: ChatState = {
@@ -46,18 +47,14 @@ const chatSlice = createSlice({
                 }
             }
         },
-        // ✅ New action to initialize from localStorage
+        // ✅ Initialize state from localStorage (with public as default)
         initializeChatState: (state) => {
             if (typeof window !== 'undefined') {
                 const savedLevel = localStorage.getItem('chatLevel');
                 const savedSessionId = localStorage.getItem('session_id');
 
-                if (savedLevel) {
-                    state.chatLevel = savedLevel;
-                }
-                if (savedSessionId) {
-                    state.sessionId = savedSessionId;
-                }
+                state.chatLevel = savedLevel || 'public';
+                state.sessionId = savedSessionId || undefined;
             }
         },
     },

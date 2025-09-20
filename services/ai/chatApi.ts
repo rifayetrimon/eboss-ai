@@ -15,18 +15,20 @@ export const sendChatWithResources = async (payload: ChatRequest) => {
     const encryptedKey = localStorage.getItem('x-encrypted-key');
     if (!encryptedKey) throw new Error('Encrypted key missing');
 
+    // ✅ Get fresh state at the time of API call
     const state = store.getState();
-
-    // ✅ Always use Redux state as the source of truth, only override if explicitly provided
     const chatLevel = payload.level ?? state.chat.chatLevel;
     const sessionId = payload.session_id ?? state.chat.sessionId ?? '';
+
+    console.log('🔍 Current Redux chatLevel at API call time:', state.chat.chatLevel);
+    console.log('🔍 Using chatLevel for API:', chatLevel);
 
     const url = `${baseUrl}/chat-with-resources`;
 
     const requestBody = {
         message: payload.message,
         session_id: sessionId,
-        level: chatLevel, // This will always match the dropdown selection
+        level: chatLevel,
         max_results: payload.max_results ?? 5,
         include_metadata: payload.include_metadata ?? false,
     };
@@ -40,7 +42,6 @@ export const sendChatWithResources = async (payload: ChatRequest) => {
         body: JSON.stringify(requestBody),
     };
 
-    console.log('📤 Sending chat request with level:', chatLevel);
     console.log('📤 Full request body:', requestBody);
 
     const res = await fetch(url, options);
@@ -53,14 +54,16 @@ export const sendChatWithResources = async (payload: ChatRequest) => {
 export const startNewChatSession = async () => {
     localStorage.removeItem('session_id');
 
-    // ✅ Get current chat level from Redux instead of hardcoding
+    // ✅ Get fresh state at the time of API call
     const state = store.getState();
     const currentChatLevel = state.chat.chatLevel;
+
+    console.log('🔍 Starting new chat with level:', currentChatLevel);
 
     return sendChatWithResources({
         message: '',
         session_id: '',
-        level: currentChatLevel, // Use current dropdown selection
+        level: currentChatLevel,
         max_results: 5,
         include_metadata: false,
     });
@@ -115,8 +118,24 @@ export const getCurrentChatLevel = () => {
 
 // 🚀 Helper function to send message with current settings
 export const sendMessageWithCurrentSettings = async (message: string) => {
+    // ✅ Get the most up-to-date state right before the call
+    const currentState = store.getState();
+    const currentLevel = currentState.chat.chatLevel;
+
+    console.log('🔍 Sending message with current level:', currentLevel);
+
     return sendChatWithResources({
         message,
-        // Don't specify level - let it use Redux state automatically
+        level: currentLevel, // ✅ Explicitly pass the current level
+    });
+};
+
+// 🚀 NEW: Send message with explicit level (for immediate use after dropdown change)
+export const sendMessageWithLevel = async (message: string, level: string) => {
+    console.log('🔍 Sending message with explicit level:', level);
+
+    return sendChatWithResources({
+        message,
+        level, // ✅ Use the explicitly provided level
     });
 };
