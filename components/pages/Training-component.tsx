@@ -115,6 +115,7 @@ export default function TrainingPage() {
     const [categoryList, setCategoryList] = useState<{ value: string; display_name: string }[]>([]);
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
 
     const [history, setHistory] = useState<any[]>([]);
     const [loadingHistory, setLoadingHistory] = useState(true);
@@ -141,11 +142,44 @@ export default function TrainingPage() {
         message: '',
     });
 
+    // Auto-dismiss timer ref
+    const alertTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
     const modalRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const showAlert = (type: 'success' | 'danger' | 'warning' | 'info', message: string) => {
+        // Clear existing timeout
+        if (alertTimeoutRef.current) {
+            clearTimeout(alertTimeoutRef.current);
+        }
+
+        // Show alert
         setAlert({ show: true, type, message });
+
+        // Auto-dismiss success alerts after 5 seconds
+        if (type === 'success') {
+            alertTimeoutRef.current = setTimeout(() => {
+                setAlert((prev) => ({ ...prev, show: false }));
+            }, 5000);
+        }
+    };
+
+    // Clean up timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (alertTimeoutRef.current) {
+                clearTimeout(alertTimeoutRef.current);
+            }
+        };
+    }, []);
+
+    // Handle manual alert close
+    const handleAlertClose = () => {
+        if (alertTimeoutRef.current) {
+            clearTimeout(alertTimeoutRef.current);
+        }
+        setAlert({ ...alert, show: false });
     };
 
     // Handle actual delete after confirmation
@@ -171,6 +205,21 @@ export default function TrainingPage() {
         } finally {
             setDeleting(false);
         }
+    };
+
+    // Simulate progress for demonstration - replace this with actual progress tracking
+    const simulateProgress = () => {
+        setUploadProgress(0);
+        const interval = setInterval(() => {
+            setUploadProgress((prev) => {
+                if (prev >= 90) {
+                    clearInterval(interval);
+                    return 90; // Keep at 90% until actual upload completes
+                }
+                return prev + Math.random() * 15;
+            });
+        }, 200);
+        return interval;
     };
 
     useEffect(() => {
@@ -222,15 +271,27 @@ export default function TrainingPage() {
                 return;
             }
 
+            // Start progress simulation
+            const progressInterval = simulateProgress();
+
             await uploadTrainingFile(file, key, selectedCategory, selectedTrainingType);
 
-            await fetchHistory();
-            showAlert('success', 'File uploaded successfully!');
-            setIsOpen(false);
-            setFile(null);
+            // Complete the progress
+            clearInterval(progressInterval);
+            setUploadProgress(100);
+
+            // Small delay to show 100% completion
+            setTimeout(async () => {
+                await fetchHistory();
+                showAlert('success', 'File uploaded successfully!');
+                setIsOpen(false);
+                setFile(null);
+                setUploadProgress(0);
+            }, 500);
         } catch (err: any) {
             console.error(err);
             showAlert('danger', 'Upload failed. ' + err.message);
+            setUploadProgress(0);
         } finally {
             setUploading(false);
         }
@@ -251,7 +312,7 @@ export default function TrainingPage() {
         <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
             {/* Global Alert */}
             <div className="fixed top-5 left-1/2 transform -translate-x-1/2 z-[100] w-full max-w-md">
-                <Alert type={alert.type} message={alert.message} show={alert.show} onClose={() => setAlert({ ...alert, show: false })} />
+                <Alert type={alert.type} message={alert.message} show={alert.show} onClose={handleAlertClose} />
             </div>
 
             <TrainingHistory
@@ -350,6 +411,19 @@ export default function TrainingPage() {
                             )}
                         </div>
 
+                        {/* Progress Bar */}
+                        {uploading && (
+                            <div className="mt-6 space-y-2">
+                                <div className="flex justify-between items-center">
+                                    <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Uploading...</h3>
+                                    <span className="text-sm text-gray-600 dark:text-gray-400">{Math.round(uploadProgress)}%</span>
+                                </div>
+                                <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full flex overflow-hidden">
+                                    <div className="bg-indigo-600 h-2 rounded-full transition-all duration-300 ease-out" style={{ width: `${uploadProgress}%` }}></div>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Action Buttons */}
                         <div className="mt-8 flex justify-end">
                             <button
@@ -364,9 +438,9 @@ export default function TrainingPage() {
                                         await handleUpload();
                                     }
                                 }}
-                                className="px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium disabled:opacity-50"
+                                className="px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                {uploading ? 'Uploading...' : 'Upload'}
+                                Upload
                             </button>
                         </div>
                     </div>
@@ -376,11 +450,11 @@ export default function TrainingPage() {
             {/* Public Upload Confirmation Modal */}
             {showConfirm && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-[60]">
-                    <div className="bg-red-100 rounded-xl shadow-xl w-full max-w-md p-6 relative">
-                        <h3 className="text-lg font-bold text-red-900 mb-2">Do not share this file&apos;s contents with the public</h3>
-                        <p className="text-sm text-red-800 mb-6">Are you sure you want to make this file public?</p>
+                    <div className="bg-red-50 rounded-xl shadow-xl w-full max-w-md p-6 relative text-center">
+                        <h3 className="text-lg font-bold text-red-900 mb-2">Are you sure you want to make this file public?</h3>
+                        <p className="text-sm text-red-800 mb-6">Try to keep sensitive information private.</p>
 
-                        <div className="flex justify-end gap-3">
+                        <div className="flex justify-center gap-3">
                             <button
                                 onClick={() => {
                                     setShowConfirm(false);
@@ -408,13 +482,13 @@ export default function TrainingPage() {
             {/* Delete Confirmation Modal */}
             {deleteConfirm.show && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-[60]">
-                    <div className="bg-red-100 rounded-xl shadow-xl w-full max-w-md p-6 relative">
+                    <div className="bg-red-50 rounded-xl shadow-xl w-full max-w-md p-6 relative text-center">
                         <h3 className="text-lg font-bold text-red-900 mb-2">Delete Training File</h3>
                         <p className="text-sm text-red-800 mb-6">
                             Are you sure you want to delete <span className="font-semibold">&quot;{deleteConfirm.filename}&quot;</span>?
                         </p>
 
-                        <div className="flex justify-end gap-3">
+                        <div className="flex justify-center gap-3">
                             <button
                                 onClick={() => {
                                     setDeleteConfirm({ show: false, documentId: '', filename: '' });

@@ -273,7 +273,7 @@ export default function ChatContent({ userName = 'User', isSidebarCollapsed }: C
 
             {/* Chat area leaves gap above input */}
             <div
-                className="absolute inset-0 overflow-y-auto px-6"
+                className="absolute inset-0 overflow-y-auto px-6 transition-all duration-300"
                 ref={chatContainerRef}
                 style={{
                     top: '74px',
@@ -396,7 +396,7 @@ export default function ChatContent({ userName = 'User', isSidebarCollapsed }: C
                 initial={{ y: 100, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.3, ease: 'easeInOut' }}
-                className={`fixed bottom-0 bg-background p-4 z-40 ${hasMessages ? 'block' : 'block sm:hidden'} ${isSidebarCollapsed ? 'md:left-16' : 'md:left-64'} left-0 right-0`}
+                className={`fixed bottom-0 bg-background p-4 z-40 transition-all duration-300 ${hasMessages ? 'block' : 'block sm:hidden'} ${isSidebarCollapsed ? 'md:left-16' : 'md:left-64'} left-0 right-0`}
             >
                 <div className="w-full max-w-3xl mx-auto">{InputBox}</div>
             </motion.div>
