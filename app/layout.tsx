@@ -24,9 +24,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <html lang="en">
             <body className={nunito.variable}>
                 <ProviderComponent>
-                    <PersonalityProvider>
-                        <AppCodeGuard>{children}</AppCodeGuard>
-                    </PersonalityProvider>
+                    {/* <PersonalityProvider> */}
+                    <AppCodeGuard>{children}</AppCodeGuard>
+                    {/* </PersonalityProvider> */}
                 </ProviderComponent>
             </body>
         </html>

@@ -42,12 +42,11 @@ export function PersonalityProvider({ children }: PersonalityProviderProps) {
             const data = await fetchCurrentExpertise();
             console.log('✅ PersonalityContext: Fetched expertise data:', data);
             setCurrentExpertiseData(data);
-            console.log('✅ PersonalityContext: Expertise data updated:', data.current_expertise);
 
             // ✅ Dispatch a custom event to notify other parts of the app
             window.dispatchEvent(
                 new CustomEvent('personalityUpdated', {
-                    detail: { expertise: data.current_expertise },
+                    detail: { expertise: data?.current_expertise },
                 }),
             );
         } catch (err) {

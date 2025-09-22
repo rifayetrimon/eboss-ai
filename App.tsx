@@ -9,8 +9,17 @@ import { getTranslation } from '@/i18n';
 function App({ children }: PropsWithChildren) {
     const themeConfig = useSelector((state: IRootState) => state.themeConfig);
     const dispatch = useDispatch();
-    const { initLocale } = getTranslation();
-    const [isLoading, setIsLoading] = useState(true);
+    const [initLocale, setInitLocale] = useState<((themeLocale: string) => Promise<void>) | undefined>(undefined);
+    // const { initLocale } = getTranslation();
+    const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        const fetchInitLocale = async () => {
+            const translation = await getTranslation();
+            setInitLocale(() => translation.initLocale);
+        };
+        fetchInitLocale();
+    }, []);
 
     useEffect(() => {
         dispatch(toggleTheme(localStorage.getItem('theme') || themeConfig.theme));
@@ -21,10 +30,12 @@ function App({ children }: PropsWithChildren) {
         dispatch(toggleNavbar(localStorage.getItem('navbar') || themeConfig.navbar));
         dispatch(toggleSemidark(localStorage.getItem('semidark') || themeConfig.semidark));
         // locale
-        initLocale(themeConfig.locale);
+        initLocale && initLocale(themeConfig.locale);
 
         setIsLoading(false);
     }, [dispatch, initLocale, themeConfig.theme, themeConfig.menu, themeConfig.layout, themeConfig.rtlClass, themeConfig.animation, themeConfig.navbar, themeConfig.locale, themeConfig.semidark]);
+
+    console.log('isLoading:', isLoading);
 
     return (
         <div

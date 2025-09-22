@@ -17,7 +17,17 @@ interface LanguageDropdownProps {
 const LanguageDropdown = ({ className = '' }: LanguageDropdownProps) => {
     const dispatch = useDispatch();
     const router = useRouter();
-    const { i18n } = getTranslation();
+    const [i18n, setI18n] = useState<{
+        language: {};
+        changeLanguage: (lang: string) => void;
+    } | null>(null);
+    useEffect(() => {
+        const fetchInitLocale = async () => {
+            const { i18n } = await getTranslation();
+            setI18n(i18n);
+        };
+        fetchInitLocale();
+    }, []);
 
     const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl';
 
@@ -31,9 +41,11 @@ const LanguageDropdown = ({ className = '' }: LanguageDropdownProps) => {
         router.refresh();
     };
 
+    console.log('🌐 LanguageDropdown: Current language:', i18n);
+
     return (
         <div className={`dropdown ${className}`}>
-            {i18n.language && (
+            {i18n && i18n.language && (
                 <Dropdown
                     offset={[0, 8]}
                     placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
@@ -41,9 +53,9 @@ const LanguageDropdown = ({ className = '' }: LanguageDropdownProps) => {
                     button={
                         <>
                             <div>
-                                <Image src={`${basePath}/assets/images/flags/${i18n.language.toUpperCase()}.svg`} alt="image" width={20} height={20} className="h-5 w-5 rounded-full object-cover" />
+                                {/* <Image src={`${basePath}/assets/images/flags/${i18n.language.toUpperCase()}.svg`} alt="image" width={20} height={20} className="h-5 w-5 rounded-full object-cover" /> */}
                             </div>
-                            <div className="text-base font-bold uppercase">{i18n.language}</div>
+                            {/* <div className="text-base font-bold uppercase">{i18n.language}</div> */}
                             <span className="shrink-0">
                                 <IconCaretDown />
                             </span>
@@ -62,7 +74,7 @@ const LanguageDropdown = ({ className = '' }: LanguageDropdownProps) => {
                                             setLocale(item.code);
                                         }}
                                     >
-                                        <Image src={`/assets/images/flags/${item.code.toUpperCase()}.svg`} alt="flag" className="h-5 w-5 rounded-full object-cover" />
+                                        <Image src={`/assets/images/flags/${item.code?.toUpperCase()}.svg`} alt="flag" className="h-5 w-5 rounded-full object-cover" />
                                         <span className="ltr:ml-3 rtl:mr-3">{item.name}</span>
                                     </button>
                                 </li>

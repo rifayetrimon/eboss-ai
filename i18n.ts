@@ -18,28 +18,28 @@ import tr from './public/locales/tr.json';
 import zh from './public/locales/zh.json';
 const langObj: any = { en, ae, da, de, el, es, fr, hu, it, ja, pl, pt, ru, sv, tr, zh };
 
-const getLang = () => {
+const getLang = async () => {
     let lang = null;
     if (typeof window !== 'undefined') {
         const cookies = new cookieObj(null, { path: '/' });
         lang = cookies.get('i18nextLng');
     } else {
-        const cookies = cookieObj.cookies();
+        const cookies = await cookieObj.cookies();
         lang = cookies.get('i18nextLng')?.value;
     }
     return lang;
 };
 
-export const getTranslation = () => {
-    const lang = getLang();
+export const getTranslation = async () => {
+    const lang = await getLang();
     const data: any = langObj[lang || 'en'];
 
     const t = (key: string) => {
         return data[key] ? data[key] : key;
     };
 
-    const initLocale = (themeLocale: string) => {
-        const lang = getLang();
+    const initLocale = async (themeLocale: string) => {
+        const lang = await getLang();
         i18n.changeLanguage(lang || themeLocale);
     };
 
@@ -50,6 +50,8 @@ export const getTranslation = () => {
             cookies.set('i18nextLng', lang);
         },
     };
+
+    console.log('🌐 i18n.ts: Current language:', i18n);
 
     return { t, i18n, initLocale };
 };
