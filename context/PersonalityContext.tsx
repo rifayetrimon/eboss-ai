@@ -40,6 +40,7 @@ export function PersonalityProvider({ children }: PersonalityProviderProps) {
 
         try {
             const data = await fetchCurrentExpertise();
+            console.log('✅ PersonalityContext: Fetched expertise data:', data);
             setCurrentExpertiseData(data);
             console.log('✅ PersonalityContext: Expertise data updated:', data.current_expertise);
 
@@ -52,6 +53,7 @@ export function PersonalityProvider({ children }: PersonalityProviderProps) {
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Failed to fetch expertise';
             setError(errorMessage);
+            setLoading(false);
             console.error('❌ PersonalityContext: Error fetching expertise:', err);
         } finally {
             setLoading(false);
@@ -83,6 +85,8 @@ export function PersonalityProvider({ children }: PersonalityProviderProps) {
         error,
         refreshExpertise,
     };
+
+    console.log('🌐 PersonalityContext: Provider rendered with context value:', contextValue);
 
     return <PersonalityContext.Provider value={contextValue}>{children}</PersonalityContext.Provider>;
 }
