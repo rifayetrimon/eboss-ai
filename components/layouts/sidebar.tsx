@@ -1,17 +1,19 @@
 'use client';
 
-import { X, User, MessageSquare, GraduationCap } from 'lucide-react';
-import IconAdd from '../icon/ai/icon-add';
-import IconSettings from '../icon/ai/icon-settings';
-import { useState, useEffect, useRef } from 'react';
 import { useProfile } from '@/hook/user/useProfile';
+import { startNewChatSession } from '@/services/ai/chatApi';
+import { ChatSession, fetchChatSessions } from '@/services/ai/sidebar';
+import { useAppSelector } from '@/store/hook';
+import { AnimatePresence, motion } from 'framer-motion';
+import { GraduationCap, MessageSquare, User, X } from 'lucide-react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
+import IconAdd from '../icon/ai/icon-add';
+import IconAiLogo from '../icon/ai/icon-ai-logo';
+import IconSettings from '../icon/ai/icon-settings';
 import IconSidebar from '../icon/ai/icon-sidebar';
 import TwoBarMenuIcon from '../icon/ai/icon-twobar';
-import IconAiLogo from '../icon/ai/icon-ai-logo';
-import { motion, AnimatePresence } from 'framer-motion';
-import { startNewChatSession } from '@/services/ai/chatApi';
-import { fetchChatSessions, ChatSession } from '@/services/ai/sidebar';
 
 interface SidebarProps {
     onCollapseChange: (collapsed: boolean) => void;
@@ -25,15 +27,22 @@ export default function Sidebar({ onCollapseChange, activeItem, setActiveItem }:
     const [mobileOpen, setMobileOpen] = useState(false);
     const { data } = useProfile();
     const sidebarRef = useRef<HTMLDivElement>(null);
+    const router = useRouter();
 
     const [sessions, setSessions] = useState<ChatSession[]>([]);
     const [loading, setLoading] = useState(false);
+
+    const encryptedKey = useAppSelector((state) => state?.chatSession?.encryptedKey);
 
     useEffect(() => {
         const loadSessions = async () => {
             try {
                 setLoading(true);
-                const list = await fetchChatSessions();
+                if (!encryptedKey) {
+                    router.push('/auth/appcode');
+                    return;
+                }
+                const list = await fetchChatSessions(encryptedKey);
                 setSessions(list);
             } catch (err) {
                 console.error('❌ Failed to fetch chat sessions:', err);
@@ -42,18 +51,18 @@ export default function Sidebar({ onCollapseChange, activeItem, setActiveItem }:
             }
         };
         loadSessions();
-    }, []);
+    }, [encryptedKey, router]);
 
-    useEffect(() => {
-        const handleSessionsUpdate = (e: Event) => {
-            const customEvent = e as CustomEvent<ChatSession[]>;
-            setSessions(customEvent.detail);
-        };
-        window.addEventListener('chatSessionsUpdated', handleSessionsUpdate);
-        return () => {
-            window.removeEventListener('chatSessionsUpdated', handleSessionsUpdate);
-        };
-    }, []);
+    // useEffect(() => {
+    //     const handleSessionsUpdate = (e: Event) => {
+    //         const customEvent = e as CustomEvent<ChatSession[]>;
+    //         setSessions(customEvent.detail);
+    //     };
+    //     window.addEventListener('chatSessionsUpdated', handleSessionsUpdate);
+    //     return () => {
+    //         window.removeEventListener('chatSessionsUpdated', handleSessionsUpdate);
+    //     };
+    // }, []);
 
     async function startNewChat() {
         try {
@@ -186,20 +195,22 @@ export default function Sidebar({ onCollapseChange, activeItem, setActiveItem }:
                         {!isCollapsed && <div className="sticky top-0 z-10 bg-white px-2 pt-3 pb-2 text-xs font-semibold text-gray-500 uppercase">History</div>}
                         <div className="space-y-1 mt-1">
                             {loading && <p className="text-sm text-gray-400 px-3">Loading...</p>}
-                            {!loading && sessions.length === 0 && <p className="text-sm text-gray-400 px-3">No history found</p>}
-                            {sessions.map((session) => (
-                                <button
-                                    key={session._id}
-                                    className="w-full flex items-center gap-3 h-9 px-3 rounded-md text-gray-700 hover:bg-gray-100 transition"
-                                    onClick={() => {
-                                        localStorage.setItem('session_id', session.session_id);
-                                        window.dispatchEvent(new CustomEvent('chatSessionSelected', { detail: session.session_id }));
-                                        setActiveItem('Chat');
-                                    }}
-                                >
-                                    {!isCollapsed && <span className="truncate leading-tight">{session.title || 'Untitled Chat'}</span>}
-                                </button>
-                            ))}
+                            {!loading && sessions && sessions.length === 0 && <p className="text-sm text-gray-400 px-3">No history found</p>}
+                            {sessions &&
+                                sessions.length > 0 &&
+                                sessions.map((session) => (
+                                    <button
+                                        key={session._id}
+                                        className="w-full flex items-center gap-3 h-9 px-3 rounded-md text-gray-700 hover:bg-gray-100 transition"
+                                        onClick={() => {
+                                            localStorage.setItem('session_id', session.session_id);
+                                            window.dispatchEvent(new CustomEvent('chatSessionSelected', { detail: session.session_id }));
+                                            setActiveItem('Chat');
+                                        }}
+                                    >
+                                        {!isCollapsed && <span className="truncate leading-tight">{session.title || 'Untitled Chat'}</span>}
+                                    </button>
+                                ))}
                         </div>
                     </div>
                     {!isCollapsed && <div className="my-2 border-t border-gray-200"></div>}

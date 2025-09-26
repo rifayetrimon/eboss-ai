@@ -1,13 +1,17 @@
 // hook/auth/useAppCode.ts
 import { useMutation } from '@tanstack/react-query';
 import { loginUserWithAppcode } from '@/services/auth/authService';
+import { useAppDispatch } from '@/store/hook';
+import { setEncryptedKey } from '@/store/chatSessionSlice';
 
 export const useAppCode = () => {
+    const dispatch = useAppDispatch();
     return useMutation({
         mutationFn: async (appCode: string) => {
             try {
                 console.log('Validating app code:', appCode);
                 const result = await loginUserWithAppcode(appCode);
+                dispatch(setEncryptedKey(result));
                 console.log('AppCode validation successful:', result);
                 return result;
             } catch (error: any) {

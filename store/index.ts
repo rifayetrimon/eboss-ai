@@ -3,9 +3,12 @@ import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import chatReducer from './chatSlice';
 import themeConfigReducer from './themeConfigSlice';
 
+import chatSessionReducer from './chatSessionSlice';
+
 const rootReducer = combineReducers({
     chat: chatReducer,
     themeConfig: themeConfigReducer,
+    chatSession: chatSessionReducer,
 });
 
 export const store = configureStore({

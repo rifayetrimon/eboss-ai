@@ -51,7 +51,5 @@ export const getTranslation = async () => {
         },
     };
 
-    console.log('🌐 i18n.ts: Current language:', i18n);
-
     return { t, i18n, initLocale };
 };

@@ -40,7 +40,6 @@ export function PersonalityProvider({ children }: PersonalityProviderProps) {
 
         try {
             const data = await fetchCurrentExpertise();
-            console.log('✅ PersonalityContext: Fetched expertise data:', data);
             setCurrentExpertiseData(data);
 
             // ✅ Dispatch a custom event to notify other parts of the app
@@ -91,16 +90,12 @@ export function PersonalityProvider({ children }: PersonalityProviderProps) {
 }
 
 export function usePersonalityContext() {
-    const context = useContext(PersonalityContext);
-    if (context === undefined) {
-        throw new Error('usePersonalityContext must be used within a PersonalityProvider');
-    }
-    return context;
+    return useContext(PersonalityContext);
 }
 
 // ✅ Hook for components that only need to trigger expertise changes
 export function useExpertiseSync() {
-    const { refreshExpertise } = usePersonalityContext();
+    const { refreshExpertise } = usePersonalityContext() || {};
 
     const notifyExpertiseChange = useCallback((expertise: string) => {
         console.log('📢 Broadcasting expertise change:', expertise);

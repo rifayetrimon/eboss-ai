@@ -12,6 +12,8 @@ import { fetchChatSessions } from '@/services/ai/sidebar';
 import Loading from '../layouts/loading';
 import { useSelector } from 'react-redux';
 import { IRootState } from '@/store';
+import { useAppSelector } from '@/store/hook';
+import { useRouter } from 'next/navigation';
 
 interface ChatContentProps {
     userName?: string;
@@ -26,12 +28,15 @@ export default function ChatContent({ userName = 'User', isSidebarCollapsed }: C
     const [likedIndex, setLikedIndex] = useState<number | null>(null);
     const [dislikedIndex, setDislikedIndex] = useState<number | null>(null);
     const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+    const router = useRouter();
+
+    const encryptedKey = useAppSelector((state) => state?.chatSession?.encryptedKey);
 
     const inputRef = useRef<HTMLTextAreaElement | null>(null);
     const chatContainerRef = useRef<HTMLDivElement | null>(null);
 
     // ✅ Get current chat level from Redux
-    const chatLevel = useSelector((state: IRootState) => state.chat.chatLevel);
+    const chatLevel = useSelector((state: IRootState) => state?.chat?.chatLevel);
 
     // ✅ Track current level for immediate use after dropdown changes
     const [currentLevel, setCurrentLevel] = useState(chatLevel);
@@ -102,7 +107,11 @@ export default function ChatContent({ userName = 'User', isSidebarCollapsed }: C
     // ✅ Function to refresh sidebar sessions
     const refreshSidebarSessions = async () => {
         try {
-            const sessions = await fetchChatSessions();
+            if (!encryptedKey) {
+                router.push('/auth/appcode');
+                return;
+            }
+            const sessions = await fetchChatSessions(encryptedKey);
             // Dispatch event to update sidebar with fresh sessions
             window.dispatchEvent(new CustomEvent('chatSessionsUpdated', { detail: sessions }));
         } catch (error) {

@@ -1,9 +1,8 @@
 'use client';
 
 import App from '@/App';
-import Loading from '@/components/layouts/loading';
 import store from '@/store';
-import { ReactNode, Suspense } from 'react';
+import { ReactNode } from 'react';
 import { Provider } from 'react-redux';
 
 import { queryClient } from '@/lib/queryClient';
@@ -17,11 +16,8 @@ const ProviderComponent = ({ children }: IProps) => {
     return (
         <Provider store={store}>
             <QueryClientProvider client={queryClient}>
-                <Suspense fallback={<Loading />}>
-                    {' '}
-                    {/* Your existing loader */}
-                    <App>{children}</App>
-                </Suspense>
+                {/* Your existing loader */}
+                <App>{children}</App>
             </QueryClientProvider>
         </Provider>
     );

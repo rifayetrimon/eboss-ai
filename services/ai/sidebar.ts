@@ -17,27 +17,32 @@ interface ChatSessionsResponse {
 }
 
 // 🚀 Fetch all chat sessions (for Sidebar history list)
-export const fetchChatSessions = async (): Promise<ChatSession[]> => {
-    const encryptedKey = localStorage.getItem('x-encrypted-key');
-    if (!encryptedKey) throw new Error('Encrypted key missing');
+export const fetchChatSessions = async (encryptedKey: string): Promise<ChatSession[]> => {
+    try {
+        // const encryptedKey = localStorage.getItem('x-encrypted-key');
+        if (!encryptedKey) throw new Error('Encrypted key missing');
 
-    const url = 'https://api02.awfatech.com/api/v1/llm/chat-sessions';
+        const url = 'https://api02.awfatech.com/api/v1/llm/chat-sessions';
 
-    const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json',
-            'x-encrypted-key': encryptedKey,
-        },
-    });
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-encrypted-key': encryptedKey,
+            },
+        });
 
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData?.message || 'Failed to fetch chat sessions');
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData?.message || 'Failed to fetch chat sessions');
+        }
+
+        const data: ChatSessionsResponse = await response.json();
+        // console.log('📜 Full API response (chat-sessions list):', data);
+
+        return data?.data ?? [];
+    } catch (error) {
+        console.error('❌ Error in fetchChatSessions:', error);
+        return [];
     }
-
-    const data: ChatSessionsResponse = await response.json();
-    // console.log('📜 Full API response (chat-sessions list):', data);
-
-    return data?.data ?? [];
 };

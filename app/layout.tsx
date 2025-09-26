@@ -19,15 +19,17 @@ const nunito = Nunito({
     variable: '--font-nunito',
 });
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
     return (
         <html lang="en">
             <body className={nunito.variable}>
-                <ProviderComponent>
-                    {/* <PersonalityProvider> */}
-                    <AppCodeGuard>{children}</AppCodeGuard>
-                    {/* </PersonalityProvider> */}
-                </ProviderComponent>
+                <main>
+                    <ProviderComponent>
+                        {/* <PersonalityProvider> */}
+                        <AppCodeGuard>{children}</AppCodeGuard>
+                        {/* </PersonalityProvider> */}
+                    </ProviderComponent>
+                </main>
             </body>
         </html>
     );

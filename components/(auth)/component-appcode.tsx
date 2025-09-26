@@ -1,54 +1,55 @@
-// components/(auth)/component-appcode.tsx
 'use client';
 
 import { FaKey } from 'react-icons/fa6';
 import { useRouter } from 'next/navigation';
 import React, { useState, useEffect } from 'react';
 import { useAppCode } from '@/hook/auth/useAppCode';
+import { useAppDispatch } from '@/store/hook';
+import { setReminder } from '@/store/chatSessionSlice';
 
 type Props = {
     onErrorMessage: (message: string) => void;
 };
 
 const ComponentAppCodeForm = ({ onErrorMessage }: Props) => {
-    const [appCode, setAppCode] = useState('');
-    const [isReady, setIsReady] = useState(false);
     const [rememberAppCode, setRememberAppCode] = useState(false);
+    const [appCodeInput, setAppCodeInput] = useState('');
     const router = useRouter();
+    const dispatch = useAppDispatch();
 
     const { mutate: validateAppCode, isPending } = useAppCode();
 
     // ✅ Load saved app code after hydration
     useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsReady(true);
-            const savedAppCode = localStorage.getItem('rememberedAppCode');
-            if (savedAppCode) {
-                setAppCode(savedAppCode);
-                setRememberAppCode(true);
-            }
-        }, 10);
-
-        return () => clearTimeout(timer);
-    }, []);
+        const savedAppCode = localStorage.getItem('rememberedAppCode');
+        if (savedAppCode) {
+            dispatch(
+                setReminder({
+                    appCode: savedAppCode,
+                }),
+            );
+            setAppCodeInput(savedAppCode);
+            setRememberAppCode(true);
+        }
+    }, [dispatch]);
 
     const submitAppCode = (e: React.FormEvent) => {
         e.preventDefault();
         onErrorMessage(''); // clear previous errors
 
-        if (!appCode.trim()) {
+        if (!appCodeInput.trim()) {
             onErrorMessage('Please enter an app code');
             return;
         }
 
         // ✅ Save/remove remembered app code
         if (rememberAppCode) {
-            localStorage.setItem('rememberedAppCode', appCode);
+            localStorage.setItem('rememberedAppCode', appCodeInput);
         } else {
             localStorage.removeItem('rememberedAppCode');
         }
 
-        validateAppCode(appCode, {
+        validateAppCode(appCodeInput, {
             onSuccess: () => {
                 router.push('/auth/login');
             },
@@ -60,7 +61,7 @@ const ComponentAppCodeForm = ({ onErrorMessage }: Props) => {
     };
 
     // ✅ Prevent hydration mismatch
-    if (!isReady) return null;
+    // if (!isReady) return null;
 
     return (
         <form className="space-y-5" onSubmit={submitAppCode}>
@@ -75,8 +76,8 @@ const ComponentAppCodeForm = ({ onErrorMessage }: Props) => {
                         type="text"
                         placeholder="Enter App Code"
                         className="form-input ps-10 placeholder:text-white-dark"
-                        value={appCode}
-                        onChange={(e) => setAppCode(e.target.value)}
+                        value={appCodeInput}
+                        onChange={(e) => setAppCodeInput(e.target.value)}
                         disabled={isPending}
                         autoComplete="off"
                         spellCheck={false}

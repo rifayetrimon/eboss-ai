@@ -6,6 +6,8 @@ import { FaUser } from 'react-icons/fa';
 import IconLockDots from '@/components/icon/icon-lock-dots';
 import IconEye from '@/components/icon/icon-eye';
 import { useLogin } from '@/hook/auth/useLogin';
+import { useAppDispatch } from '@/store/hook';
+import { setReminder } from '@/store/chatSessionSlice';
 
 const ComponentLogin = ({ setErrorMessage }: { setErrorMessage: (msg: string) => void }) => {
     const router = useRouter();
@@ -13,6 +15,7 @@ const ComponentLogin = ({ setErrorMessage }: { setErrorMessage: (msg: string) =>
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [rememberMe, setRememberMe] = useState(false);
+    const dispatch = useAppDispatch();
 
     const { mutate: login, isPending } = useLogin();
 
@@ -31,8 +34,18 @@ const ComponentLogin = ({ setErrorMessage }: { setErrorMessage: (msg: string) =>
 
         // Save username if Remember Me checked
         if (rememberMe) {
+            dispatch(
+                setReminder({
+                    username,
+                }),
+            );
             localStorage.setItem('rememberedUsername', username);
         } else {
+            dispatch(
+                setReminder({
+                    username: null,
+                }),
+            );
             localStorage.removeItem('rememberedUsername');
         }
 

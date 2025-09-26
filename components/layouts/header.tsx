@@ -15,9 +15,9 @@ interface HeaderProps {
 }
 
 export default function Header({ isCollapsed, activeItem }: HeaderProps) {
-    const { refreshExpertise, currentExpertiseData } = usePersonalityContext();
+    const { refreshExpertise, currentExpertiseData } = usePersonalityContext() || {};
     const dispatch = useDispatch();
-    const chatLevel = useSelector((state: IRootState) => state.chat.chatLevel);
+    const chatLevel = useSelector((state: IRootState) => state?.chat?.chatLevel);
 
     const [selectedExpertise, setSelectedExpertise] = useState<string | null>(null);
     const [expertiseList, setExpertiseList] = useState<string[]>([]);
@@ -91,7 +91,7 @@ export default function Header({ isCollapsed, activeItem }: HeaderProps) {
             }
 
             window.dispatchEvent(new CustomEvent('expertiseChanged', { detail: { expertise: option.toLowerCase() } }));
-            await refreshExpertise();
+            refreshExpertise && (await refreshExpertise());
         } catch (err) {
             console.error('❌ Error changing expertise:', err);
             if (currentExpertiseData?.current_expertise) {

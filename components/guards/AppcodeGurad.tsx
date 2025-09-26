@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { useAppDispatch } from '@/store/hook';
+import { deleteEncryptedKey, setReminder, setEncryptedKey } from '@/store/chatSessionSlice';
 
 type Props = {
     children: React.ReactNode;
@@ -10,7 +12,8 @@ type Props = {
 const AppCodeGuard = ({ children }: Props) => {
     const router = useRouter();
     const pathname = usePathname();
-    const [isAllowed, setIsAllowed] = useState<boolean | null>(null); // null = checking, true = allowed, false = not allowed
+    // const [isAllowed, setIsAllowed] = useState<boolean | null>(null); // null = checking, true = allowed, false = not allowed
+    const dispatch = useAppDispatch();
 
     // Safe localStorage getter
     const safeGetItem = (key: string): string | null => {
@@ -22,20 +25,27 @@ const AppCodeGuard = ({ children }: Props) => {
 
     useEffect(() => {
         const checkAuth = () => {
-            // Always allow auth pages
-            if (pathname.startsWith('/auth')) {
-                setIsAllowed(true);
-                return;
-            }
+            // // Always allow auth pages
+            // if (pathname.startsWith('/auth')) {
+            //     setIsAllowed(true);
+            //     return;
+            // }
 
             // Check for encrypted key
             const token = safeGetItem('x-encrypted-key');
+            const appCode = safeGetItem('rememberedAppCode');
+            const username = safeGetItem('rememberedUsername');
+
+            username && dispatch(setReminder({ username }));
+            appCode && dispatch(setReminder({ appCode }));
 
             if (!token) {
-                router.replace('/auth/appcode');
-                setIsAllowed(false);
+                router.push('/auth/appcode');
+                // setIsAllowed(false);
+                dispatch(deleteEncryptedKey());
             } else {
-                setIsAllowed(true);
+                dispatch(setEncryptedKey(token || ''));
+                // setIsAllowed(true);
             }
         };
 
@@ -43,18 +53,15 @@ const AppCodeGuard = ({ children }: Props) => {
         const timer = setTimeout(checkAuth, 50);
 
         return () => clearTimeout(timer);
-    }, [router, pathname]);
+    }, [router, pathname, dispatch]);
 
     // Don't show any loader here - let your main Loading component handle it
     // Return null while checking (this prevents rendering children too early)
-    if (isAllowed === null) {
-        return null; // Your main <Loading /> will show instead
-    }
 
     // Don't render children if not allowed
-    if (!isAllowed) {
-        return null;
-    }
+    // if (!isAllowed) {
+    //     return null;
+    // }
 
     return <>{children}</>;
 };

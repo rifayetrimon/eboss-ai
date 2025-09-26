@@ -7,13 +7,13 @@ import Image from 'next/image';
 import Loading from '../layouts/loading';
 
 export default function PersonalContent() {
-    const { currentExpertiseData: data, refreshExpertise } = usePersonalityContext();
+    const { currentExpertiseData: data, refreshExpertise } = usePersonalityContext() || {};
 
     // ✅ Auto-refresh when component mounts to ensure we have the latest data
     useEffect(() => {
         const initializePersonalityData = async () => {
             try {
-                await refreshExpertise();
+                refreshExpertise && await refreshExpertise();
                 console.log('✅ PersonalContent: Personality data refreshed on mount');
             } catch (error) {
                 console.error('❌ PersonalContent: Error refreshing personality data:', error);

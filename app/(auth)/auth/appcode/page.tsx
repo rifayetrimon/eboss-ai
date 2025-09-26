@@ -1,20 +1,29 @@
 'use client';
 
+import ComponentAppCodeForm from '@/components/(auth)/component-appcode';
 import AuthLayout from '@/components/layouts/AuthLayout';
 import Alert from '@/components/ui/alert';
-import { useState } from 'react';
-import dynamic from 'next/dynamic';
-import Loading from '@/components/layouts/loading'; // Your existing loader
-
+import { useAppSelector } from '@/store/hook';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 // Dynamic import to prevent SSR issues
-const ComponentAppCodeForm = dynamic(() => import('@/components/(auth)/component-appcode'), {
-    ssr: false, // This prevents SSR for this component
-    loading: () => <Loading />, // Use your existing loader
-});
+// const ComponentAppCodeForm = dynamic(() => import('@/components/(auth)/component-appcode'), {
+//     ssr: false, // This prevents SSR for this component
+//     loading: () => <Loading />, // Use your existing loader
+// });
 
 export default function AppCodePageAlternative() {
     const [showError, setShowError] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
+
+    const router = useRouter();
+    const encryptedKey = useAppSelector((state) => state?.chatSession?.encryptedKey);
+
+    useEffect(() => {
+        if (encryptedKey) {
+            router.push('/'); // Redirect to home if encryptedKey exists
+        }
+    }, [encryptedKey, router]);
 
     const handleError = (msg: string) => {
         setErrorMessage(msg);
